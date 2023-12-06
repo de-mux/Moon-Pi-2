@@ -1,2 +1,12 @@
 .python-version
 secret.txt
+fonts/*.tt*
+tests/output/
+
+__pycache__/
+.DS_Store
+
+*.kra~
+
+test*.png
+test*.jpg

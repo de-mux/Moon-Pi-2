@@ -21,7 +21,8 @@ select = [
 ignore = [
     "S311",  # cryptographic random number
     "S602",  # using shell=True with subprocess
-    "COM812"
+    "COM812",
+    "TRY003", # long exception messages
 ]
 
 [lint.pydocstyle]
