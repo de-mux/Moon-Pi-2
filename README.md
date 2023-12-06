@@ -8,6 +8,7 @@ An ePaper moon calendar powered by Raspberry Pi
 
 - [Instructions](#instructions)
   - [Setup Raspberry Pi](#setup-raspberry-pi)
+    - [Grab fonts](#grab-fonts)
     - [Setup Software](#setup-software)
     - [Gather Images](#gather-images)
     - [Moon Data](#moon-data)
@@ -62,6 +63,13 @@ the following:
    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
    ```
 
+1. Clone the repo
+
+```bash
+cd ~
+git clone https://github.com/de-mux/Moon-Pi
+```
+
 1. Enable the SPI interface (used by the e-Paper display):
 
    - ```bash
@@ -106,6 +114,30 @@ the following:
      $ pyenv activate moonpi
      (moonpi) $
      ```
+
+   - Install requirements
+
+     ```bash
+     pip install -r requirements.txt
+     ```
+
+#### Grab fonts
+
+Download the Luminari font into the Moon-Pi/fonts directory. If you decide to go
+with different fonts, you will need to update the `FONTS` constant in the
+`moon_pi.py` script to point to the right ones. The directory tree should look
+like:
+
+```plain
+├── README.md
+├── fonts
+│   ├── Luminari-Regular.ttf
+│   ├── SourceSans3-Semibold.ttf
+│   └── copy-fonts-here.txt
+...
+```
+
+- [Luminari](https://dafont101.com/luminari-font/)
 
 #### Setup Software
 
