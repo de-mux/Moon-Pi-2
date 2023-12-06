@@ -228,7 +228,7 @@ def get_font(name: str, size=None) -> ImageFont.FreeTypeFont:
     font_file, default_size = FONTS[name]
     font_path = FONT_DIR / font_file
 
-    if not font_path:
+    if not font_path.exists():
         msg = f"could not find the font {font_path}. Make sure you have it downloaded into the right directory"
         raise FileNotFoundError(msg)
 

@@ -1,6 +1,5 @@
 .python-version
 secret.txt
-fonts/*.tt*
 tests/output/
 
 __pycache__/
