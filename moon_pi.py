@@ -68,7 +68,7 @@ QUOTATION_FILE = BASE_DIR / "quotations.csv"
 
 FONT_DIR = BASE_DIR / "fonts"
 FONTS = {
-    "quote": ("Luminari.ttf", 20),
+    "quote": ("Luminari-Regular.ttf", 20),
     "credit": ("SourceSans3-Semibold.ttf", 20),
     "date_and_phase": ("SourceSans3-Semibold.ttf", 28),
 }
