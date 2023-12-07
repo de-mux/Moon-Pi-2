@@ -1,11 +1,13 @@
 .python-version
 secret.txt
+fonts/Luminari*
 tests/output/
 
 __pycache__/
 .DS_Store
 
-*.kra~
+# Backup files
+*~
 
 test*.png
 test*.jpg
