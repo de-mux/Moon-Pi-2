@@ -88,6 +88,11 @@ WAVESHARE_DISPLAY = "epd7in3f"
     >>> epaper.modules()
 """
 
+FONT_ANTIALIASING = False
+"""Whether or not to enable antialiasing for fonts. Generally this should be
+False for displays with limited color palettes.
+"""
+
 DISPLAY_MARGINS = (51, 18)
 """Margins for the display, in the form x, y, where x is the left and right
 margins, and y is the top and bottom margins.
@@ -103,6 +108,9 @@ LOCATION = {"city": "san francisco", "latitude": 37.773972, "longitude": -122.43
 """The location information, with latitude and longitude. Customize this to your
 own location.
 """
+
+BATTERY_LOW_THRESHOLD = 20
+"""Battery low indicator will be drawn if charge becomes lower than this threshold."""
 
 MOON_QUARTERS = ["New Moon", "First Quarter", "Full Moon", "Third Quarter"]
 MOON_PHASES = ["Waxing Crescent", "Waxing Gibbous", "Waning Gibbous", "Waning Crescent"]
@@ -256,7 +264,6 @@ def generate_image(
     # Note that you will need to create your own images and possibly change the image directory below
     logger.info("Opening background image file")
     h_image = Image.open(background_img)
-    draw = ImageDraw.Draw(h_image)
 
     # set margins
     x_margin, y_margin = DISPLAY_MARGINS
@@ -267,6 +274,7 @@ def generate_image(
     top = y_margin
     bottom = h_image.height - y_margin
 
+    # Draw moon
     moon_img_size = (MOON_SIZE_PX, MOON_SIZE_PX)
     moon_img = Image.open(get_moon_img_path(moon_phase_lunation, moon_phase_text))
     moon_img = moon_img.resize(moon_img_size)
@@ -277,8 +285,15 @@ def generate_image(
 
     h_image.paste(moon_img, moon_coords, moon_img)
 
+    draw = ImageDraw.Draw(h_image)
+    draw.fontmode = "L" if FONT_ANTIALIASING else "1"
+    # Draw quote and credit
     draw.text(
-        (x_center, top + 5), quotation_text, font=quotation_font, fill=0, anchor="mt"
+        (x_center, top + 5),
+        quotation_text,
+        font=quotation_font,
+        fill=0,
+        anchor="mt",
     )
     if credit_text:
         draw.text(
@@ -288,6 +303,8 @@ def generate_image(
             fill=0,
             anchor="rm",
         )
+
+    # Draw date
     draw.text(
         (left + 10, bottom - 38),
         date_to_show,
@@ -295,6 +312,7 @@ def generate_image(
         fill=epd.WHITE,
         anchor="lt",
     )
+    # Draw moon phase
     draw.text(
         (right - 10, bottom - 38),
         moon_phase_text,
@@ -303,7 +321,8 @@ def generate_image(
         anchor="rt",
     )
 
-    if int(battery_charge_percent) > 20:
+    # Draw battery low indicator (if applicable)
+    if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
         logger.info(f"Battery level is {battery_charge_percent}%.")
     else:
         logger.warning(f"Battery low ({battery_charge_percent}%).")
@@ -314,7 +333,18 @@ def generate_image(
     return h_image
 
 
-def load_quotations():
+def load_quotations() -> list[list[str]]:
+    """Load a list of quotations from quotations.csv.
+
+    Example:
+
+        >>> load_quotations()
+        [
+            ["You are my sun, my moon, and all my stars.", "E.E. Cummings"],
+            ["The moon is my mother.", "Sylvia Plath"],
+            ...
+        ]
+    """
     with QUOTATION_FILE.open() as fp:
         reader = csv.reader(fp)
         # Skip the header row
@@ -346,6 +376,9 @@ def get_banner_text(now: arrow.Arrow):
 
 
 def get_font_size_for_quote(quotation_text) -> int:
+    """Return an appropriate font size for the given quote, based on quote
+    length.
+    """
     quote_length = len(quotation_text)
     if quote_length <= 54:
         return 24
@@ -378,6 +411,7 @@ if __name__ == "__main__":
     epd = get_epd()
 
     quotation_text, credit_text, font_size = get_banner_text(now)
+
     h_image = generate_image(
         now,
         quotation_text,
