@@ -673,6 +673,7 @@ def get_pisugar_server() -> t.Union[pisugar.PiSugarServer, None]:
         return None
 
     if event_conn is None:
+        logger.error("Unable to connect to PiSugar server. event_conn is None")
         return None
 
     return pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
