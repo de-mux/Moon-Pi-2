@@ -7,6 +7,7 @@ import csv
 import logging
 import math
 import random
+import types
 import typing as t
 from dataclasses import dataclass
 from functools import lru_cache
@@ -223,9 +224,117 @@ def load_image(img_path: Path) -> Image.Image:
 # --------------- EPAPER DISPLAY ------------------
 
 
+def patch_epd7in3f(epd):
+    """Version 1.0 of the epaper lib on PyPI has a bug in epd7in3f displays
+    where the display comes out dim.  This patches the class to fix the bug.
+
+    See https://github.com/waveshareteam/e-Paper/commit/8be47b27f1a6808fd82ea9ceeac04c172e4ee9a8
+    """
+    epdconfig = epaper.epaper('epd7in3f').epdconfig
+
+    def init(self):
+        breakpoint()
+        if (epdconfig.module_init() != 0):
+            return -1
+        # EPD hardware init start
+        self.reset()
+        self.ReadBusyH()
+        epdconfig.delay_ms(30)
+
+        self.send_command(0xAA)    # CMDH
+        self.send_data(0x49)
+        self.send_data(0x55)
+        self.send_data(0x20)
+        self.send_data(0x08)
+        self.send_data(0x09)
+        self.send_data(0x18)
+
+        self.send_command(0x01)
+        self.send_data(0x3F)
+        self.send_data(0x00)
+        self.send_data(0x32)
+        self.send_data(0x2A)
+        self.send_data(0x0E)
+        self.send_data(0x2A)
+
+        self.send_command(0x00)
+        self.send_data(0x5F)
+        self.send_data(0x69)
+
+        self.send_command(0x03)
+        self.send_data(0x00)
+        self.send_data(0x54)
+        self.send_data(0x00)
+        self.send_data(0x44) 
+
+        self.send_command(0x05)
+        self.send_data(0x40)
+        self.send_data(0x1F)
+        self.send_data(0x1F)
+        self.send_data(0x2C)
+
+        self.send_command(0x06)
+        self.send_data(0x6F)
+        self.send_data(0x1F)
+        self.send_data(0x1F)
+        self.send_data(0x22)
+
+        self.send_command(0x08)
+        self.send_data(0x6F)
+        self.send_data(0x1F)
+        self.send_data(0x1F)
+        self.send_data(0x22)
+
+        self.send_command(0x13)    # IPC
+        self.send_data(0x00)
+        self.send_data(0x04)
+
+        self.send_command(0x30)
+        self.send_data(0x3C)
+
+        self.send_command(0x41)     # TSE
+        self.send_data(0x00)
+
+        self.send_command(0x50)
+        self.send_data(0x3F)
+
+        self.send_command(0x60)
+        self.send_data(0x02)
+        self.send_data(0x00)
+
+        self.send_command(0x61)
+        self.send_data(0x03)
+        self.send_data(0x20)
+        self.send_data(0x01) 
+        self.send_data(0xE0)
+
+        self.send_command(0x82)
+        self.send_data(0x1E) 
+
+        self.send_command(0x84)
+        self.send_data(0x00)
+
+        self.send_command(0x86)    # AGID
+        self.send_data(0x00)
+
+        self.send_command(0xE3)
+        self.send_data(0x2F)
+
+        self.send_command(0xE0)   # CCSET
+        self.send_data(0x00) 
+
+        self.send_command(0xE6)   # TSSET
+        self.send_data(0x00)
+        return 0
+
+    epd.init = types.MethodType(init, epd)
+
+
 @lru_cache
 def get_epd():
     epd = epaper.epaper(WAVESHARE_DISPLAY).EPD()
+    if WAVESHARE_DISPLAY == 'epd7in3f':
+        patch_epd7in3f(epd)
     logger.info(f"Created display: {epd}")
     logger.info(f"Display {WAVESHARE_DISPLAY} width: {epd.width}, height: {epd.height}")
     logger.info("Initializing display")
@@ -585,10 +694,9 @@ if __name__ == "__main__":
     logger.info(f"Date: {now}")
     logger.info(f"{moon_info}")
 
-    epd = get_epd()
-
     quotation_text, credit_text, font_size = get_banner_text(now)
 
+    epd = get_epd()
     output_palette = epd_get_palette(epd)
     image = generate_image(
         now,
