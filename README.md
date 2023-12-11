@@ -67,8 +67,17 @@ the following:
 
    # optional development tools
    sudo apt install zsh neovim
+   sudo apt install i2c-tools
    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
    ```
+
+1. Sync the RTC with the system clock
+
+   - First make sure your system clock is accurate, otherwise sync it with an
+     NTP server
+   - Login to the PiSugar power manager server and sync "Web > Pi & RTC". This
+     should synchronize both the RPi system clock and the PiSugar's RTC with an
+     internet NTP server
 
 1. Clone the repo
 

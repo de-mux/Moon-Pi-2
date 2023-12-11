@@ -348,7 +348,7 @@ def get_epd():
 
 def epd_clear(epd) -> None:
     """Clear the display."""
-    logger.info("Clearing display")
+    logger.info("Clearing display...")
     epd.Clear()
     logger.info("Cleared")
 
@@ -374,7 +374,9 @@ def epd_update_image(epd, image: Image.Image) -> None:
 
     epd_clear(epd)
     epd_buf = epd.getbuffer(image)
+    logger.info("Displaying image...")
     epd.display(epd_buf)
+    logger.info("Display updated")
     epd_sleep(epd)
 
 
@@ -663,17 +665,34 @@ def get_font_size_for_quote(quotation_text) -> int:
     return 16
 
 
-def get_battery_charge_percent() -> t.Union[float, None]:
+def get_pisugar_server() -> t.Union[pisugar.PiSugarServer, None]:
     try:
         conn, event_conn = pisugar.connect_tcp()
     except OSError:
-        logger.exception("Unable to connect to PiSugar server. Skipping battery check.")
+        logger.exception("Unable to connect to PiSugar server.")
         return None
 
     if event_conn is None:
         return None
 
-    ps = pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
+    return pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
+
+
+def sync_rtc_to_system_clock():
+    ps = get_pisugar_server()
+    if not ps:
+        logger.warning("PiSugar server not found. Could not sync RTC to system clock.")
+        return
+    logger.info("Syncing system clock to PiSugar RTC")
+    ps.rtc_rtc2pi()
+    logger.info("Syncing system clock to PiSugar RTC... done")
+
+
+def get_battery_charge_percent() -> t.Union[float, None]:
+    ps = get_pisugar_server()
+    if not ps:
+        logger.warning("PiSugar server not found. Skipping battery check.")
+        return None
     charge_pct = ps.get_battery_level()
     charging = ps.get_battery_charging()
 
@@ -690,6 +709,7 @@ def get_battery_charge_percent() -> t.Union[float, None]:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
+    sync_rtc_to_system_clock()
     charge_pct = get_battery_charge_percent()
 
     now = arrow.now()
