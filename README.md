@@ -10,9 +10,9 @@ An ePaper moon calendar powered by Raspberry Pi
   - [Setup Raspberry Pi](#setup-raspberry-pi)
     - [Grab fonts](#grab-fonts)
     - [Setup Software](#setup-software)
-    - [Gather Images](#gather-images)
-    - [Moon Data](#moon-data)
+    - [About The Moon Images](#about-the-moon-images)
     - [Gather Quotations](#gather-quotations)
+    - [Moon Phase Calculation](#moon-phase-calculation)
   - [Wire it Up](#wire-it-up)
     - [PiSugar power supply](#pisugar-power-supply)
     - [e-Paper display](#e-paper-display)
@@ -163,24 +163,43 @@ of `pkill` before the script stops. (In my experience, there's plenty of time to
 do this. And if you miss your window, you can always reboot the Pi and try
 again!)
 
-#### Gather Images
+#### About The Moon Images
 
-You'll need to create your own moon images because the ones I have in my project
-aren't available for public license. Feel free, though, to use the background
-image I created, located in this repository. It has a yellow band already in
-place for the quotation text. You can have as many images as you like. I use one
-each for full and new moons, one each for first and third quarters, two each for
-waxing and waning gibbous, and three each for waxing and waning crescents. It's
-up to you. Just be sure to sync it up with the Moon Data, described below.
+The moon images and background image included were obtained from
+[NASA Dial-A-Moon](https://svs.gsfc.nasa.gov/gallery/moonphase/), which are
+generally free for personal/educational use (see
+[NASA Images and Media Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
+There are enough images to provide a different moon image for every day of a
+cycle (30 total to cover a complete ~29.5-day moon phase cycle).
 
-#### Moon Data
+If you want to use your own images, it's recommended (though not strictly
+required) to convert the images to the color palette used by your display.
 
-You can see a sample file of moon data in this repository. You'll want to extend
-it out yourself. Doing it this way means you don't have to have your Pi talk to
-the internet at all -- all data is on the device. Note that there are sometimes
-multiple images depending on the phase of the moon. The sample file is set up to
-work with the script provided here. If you change the formatting of the moon
-data file, you'll need to tweak the Python script to match.
+To get a color palette, you can find one of the demo images for your given
+display from the Waveshare website, and use that as your palette file. Then use
+that file to convert your image to that color palette.
+
+Some image manipulation programs like [ImageMagick](https://imagemagick.org/)
+allow you to specify an arbitrary image as a "palette file", while others (like
+ffmpeg) require you to create a specific image to be used as a palette file.
+
+I found the best results were obtained by running source images through
+ImageMagick with the FloydSteinberg dither setting.
+
+```bash
+magick input.png -dither FloydSteinberg -remap waveshare-7color-palette.png output.png
+```
+
+(I also tried ffmpeg and Gimp with various dither settings including Floyd
+Steinberg, but ImageMagick seemed to yield the best results. Pillow, the Python
+library used in this project also has a decent conversion algorithm).
+
+To batch convert multiple images, you can use:
+
+```bash
+mkdir converted
+for f in /path/to/images/*.png; do magick $f -dither FloydSteinberg -remap images/waveshare-7color-palette.png "converted/$(basename "$f")"; done
+```
 
 #### Gather Quotations
 
@@ -193,6 +212,12 @@ ratios with some trial and error. (That's how I did it!) Use Excel or Numbers or
 Sheets or whatever to count up the line lengths for you automatically -- makes
 life easier! And don't forget to enclose in quotation marks any quotations that
 have commas in them!
+
+#### Moon Phase Calculation
+
+This project uses the "[ephem](https://rhodesmill.org/pyephem/)" library to
+determine the moon phase based on the date, allowing the project to run
+completely offline.
 
 ### Wire it Up
 

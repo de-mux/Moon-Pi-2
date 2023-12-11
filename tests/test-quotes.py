@@ -13,10 +13,10 @@ BASE_DIR = Path(__file__).parent
 OUT_DIR = BASE_DIR / "output"
 
 
-def test_quotes(now, epd):
+def test_quotes(now, palette):
     rows = moon_pi.load_quotations()
 
-    lunation, phase_percent, moon_phase_text = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_phase(now)
 
     for idx, row in enumerate(rows):
         quote, credit = row
@@ -27,19 +27,17 @@ def test_quotes(now, epd):
             quote,
             credit,
             font_size,
-            moon_pi.BACKGROUND_IMAGE,
-            moon_phase_text,
-            lunation,
+            moon_info,
             100,
-            epd,
+            palette,
         )
         img.save(str(OUT_DIR / f"test-img-{idx}.png"))
 
 
-def test_bday(epd):
+def test_bday(palette):
     now = arrow.Arrow(2020, 6, 16)
 
-    lunation, phase_percent, moon_phase_text = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_phase(now)
 
     quote, credit, font_size = moon_pi.get_banner_text(now)
     img = moon_pi.generate_image(
@@ -47,29 +45,25 @@ def test_bday(epd):
         quote,
         credit,
         font_size,
-        moon_pi.BACKGROUND_IMAGE,
-        moon_phase_text,
-        lunation,
+        moon_info,
         100,
-        epd,
+        palette,
     )
     img.save(str(OUT_DIR / "test-img-bday.png"))
 
 
-def test_low_battery(now, epd):
+def test_low_battery(now, palette):
     quote, credit, font_size = moon_pi.get_banner_text(now)
-    lunation, phase_percent, moon_phase_text = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_phase(now)
 
     img = moon_pi.generate_image(
         now,
         quote,
         credit,
         font_size,
-        moon_pi.BACKGROUND_IMAGE,
-        moon_phase_text,
-        lunation,
+        moon_info,
         19,
-        epd,
+        palette,
     )
     img.save(str(OUT_DIR / "test-img-low-battery.png"))
 
@@ -79,7 +73,8 @@ if __name__ == "__main__":
     now = arrow.now()
     epd = moon_pi.get_epd()
 
-    test_quotes(now, epd)
+    output_palette = moon_pi.epd_get_palette(epd)
+    test_quotes(now, output_palette)
 
-    test_bday(epd)
-    test_low_battery(now, epd)
+    test_bday(output_palette)
+    test_low_battery(now, output_palette)

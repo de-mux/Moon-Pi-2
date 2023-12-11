@@ -7,12 +7,15 @@ import csv
 import logging
 import math
 import random
+import typing as t
+from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 from unittest.mock import MagicMock
 
 import arrow
 import ephem
+import pisugar
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -69,13 +72,15 @@ QUOTATION_FILE = BASE_DIR / "quotations.csv"
 FONT_DIR = BASE_DIR / "fonts"
 FONTS = {
     "quote": ("Luminari-Regular.ttf", 20),
-    "credit": ("SourceSans3-Semibold.ttf", 20),
+    "credit": ("SourceSans3-Semibold.ttf", 18),
     "date_and_phase": ("SourceSans3-Semibold.ttf", 28),
 }
 """Font mapping, where key is the font purpose, and value is a tuple of
 (font_filename, default_size).
 Font files are assumed to be in the "fonts" directory.
 """
+
+WHITE = 0xFFFFFF
 
 IMAGE_DIR = BASE_DIR / "images"
 BACKGROUND_IMAGE = IMAGE_DIR / "screen-template-7in3.png"
@@ -88,7 +93,7 @@ WAVESHARE_DISPLAY = "epd7in3f"
     >>> epaper.modules()
 """
 
-FONT_ANTIALIASING = False
+FONT_ANTIALIASING = True
 """Whether or not to enable antialiasing for fonts. Generally this should be
 False for displays with limited color palettes.
 """
@@ -120,6 +125,13 @@ logger = logging.getLogger("moonpi")
 
 
 # --------------- LUNAR PHASE ------------------
+
+
+@dataclass
+class MoonInfo:
+    lunation: float
+    phase_percent: float
+    text: str
 
 
 def _get_moon_cycle_range(date: ephem.Date) -> tuple[ephem.Date, ephem.Date]:
@@ -166,7 +178,7 @@ def _get_lunation(date: ephem.Date):
     return (days_since_new / (cycle_end - cycle_start)) % 1.0
 
 
-def get_moon_phase(dt: arrow.Arrow) -> tuple[float, float, str]:
+def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     earth = ephem.Observer()
     earth.lat = math.radians(LOCATION["latitude"])
     earth.long = math.radians(LOCATION["longitude"])
@@ -178,7 +190,7 @@ def get_moon_phase(dt: arrow.Arrow) -> tuple[float, float, str]:
     text = _get_moon_phase_text(earth.date)
     lunation = _get_lunation(earth.date)
 
-    return lunation, phase_percent, text
+    return MoonInfo(lunation, phase_percent, text)
 
 
 # --------------- IMAGES -----------------
@@ -198,6 +210,22 @@ def get_moon_img_path(lunation: float, moon_phase_text: str) -> Path:
     return moon_files[idx]
 
 
+def load_image(img_path: Path) -> Image.Image:
+    img = Image.open(img_path)
+    if img.has_transparency_data:
+        if not img.mode == "RGBA":
+            img = img.convert("RGBA")
+    elif img.mode != "RGB":
+        img = img.convert("RGB")
+    # img.palette  # dict[tuple, int]
+    # img.getcolors()  # list[tuple]
+    # img.getpalette()  # flat list[int]
+    # img.has_transparency_data
+    # img.im.getpalettemode()  # RGB
+    # img.mode  # e.g. RGB, P
+    return img
+
+
 # --------------- EPAPER DISPLAY ------------------
 
 
@@ -212,24 +240,82 @@ def get_epd():
     return epd
 
 
-def epd_clear(epd):
+def epd_clear(epd) -> None:
     """Clear the display."""
     logger.info("Clearing display")
     epd.Clear()
     logger.info("Cleared")
 
 
-def epd_sleep(epd):
+def epd_sleep(epd) -> None:
     # It's super important to sleep the display when you're done updating, otherwise you could damage it
     logger.info("Putting display to sleep...")
     epd.sleep()  # sends sleep command and calls epdconfig.module_exit()
     logger.info("Display is asleep")
 
 
-def epd_update_image(epd, image):
+def epd_update_image(epd, image: Image.Image) -> None:
+    """Display the image on the e-Paper display, including
+    clearing the screen beforehand and putting the display to sleep afterwards.
+
+    Note that if you don't pre-convert the image to the display's color palette,
+    it will be done automatically. For more control over the conversion, you may
+    want to do the conversion yourself using Pillow prior to calling this function.
+    See `paletize_image()`.
+    """
+    palette = epd_get_palette(epd)
+    image = paletize_image(image, palette, dither=False)
+
     epd_clear(epd)
-    epd.display(epd.getbuffer(image))
+    epd_buf = epd.getbuffer(image)
+    epd.display(epd_buf)
     epd_sleep(epd)
+
+
+def epd_get_palette(epd) -> list[int]:
+    """Get the RGB color palette for the e-Paper display based on its capabilities.
+    The resulting palette will be padded to 256 colors, for a total length of
+    3 * 256.
+    """
+    colors = ("BLACK", "WHITE", "GREEN", "BLUE", "RED", "YELLOW", "ORANGE")
+    bgr_palette = [
+        _packed_bgr_to_rgb(getattr(epd, color))
+        for color in colors
+        if hasattr(epd, color)
+    ]
+    default_color = bgr_palette[0]
+    values_per_swatch = len(default_color)
+    palette_256 = list(default_color) * 256
+    for swatch_num, color in enumerate(bgr_palette):
+        idx = values_per_swatch * swatch_num
+        palette_256[idx : idx + values_per_swatch] = color
+    return palette_256
+
+
+def _packed_bgr_to_rgb(val: int) -> tuple[int, ...]:
+    """Convert packed BGR color value to 3-tuple,
+    e.g. 0x0080FF -> (0xff, 0x80, 0x00)
+    """
+    return tuple(val.to_bytes(3, "little"))
+
+
+def paletize_image(
+    img: Image.Image, palette: t.Iterable[int], dither=False
+) -> Image.Image:
+    """Convert an image's color palette to the colors supported by the given
+    e-Paper display.
+    """
+
+    # Create a palette with the colors supported by the panel
+    pal_image = Image.new("P", (1, 1))
+    pal_image.putpalette(palette)
+
+    # Convert the soruce image to the display colors with no dither
+    image_paletized = img.convert("RGB").quantize(
+        palette=pal_image,
+        dither=Image.Dither.FLOYDSTEINBERG if dither else Image.Dither.NONE,
+    )
+    return image_paletized
 
 
 def get_font(name: str, size=None) -> ImageFont.FreeTypeFont:
@@ -243,94 +329,171 @@ def get_font(name: str, size=None) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONT_DIR / font_file), size if size else default_size)
 
 
+@dataclass
+class ImageSettings:
+    now: arrow.Arrow
+    quotation_text: str
+    credit_text: str
+    font_size: int
+    moon: MoonInfo
+    battery_charge_percent: float
+    output_palette: t.Iterable[int]
+
+
+class ImageBuilder:
+    def __init__(self, settings: ImageSettings):
+        self.settings = settings
+
+        # Note that you will need to create your own images and possibly change the image directory below
+        logger.info("Opening background image file")
+        self.bg_image = load_image(BACKGROUND_IMAGE)
+
+    def build(self):
+        image = self.generate_base_image()
+
+        self.add_image_text(image)
+
+        # Draw battery low indicator (if applicable)
+        battery_charge_percent = self.settings.battery_charge_percent
+        if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
+            logger.info(f"Battery level is {battery_charge_percent}%.")
+        else:
+            logger.warning(f"Battery low ({battery_charge_percent}%).")
+            self.add_image_battery_indicator(image)
+
+        image = paletize_image(
+            image,
+            self.settings.output_palette,
+            dither=False,  # don't dither fonts or battery indicator
+        )
+        return image
+
+    @property
+    def x_center(self):
+        return int((self.right + self.left) / 2)
+
+    @property
+    def y_center(self):
+        return int((self.bottom + self.top) / 2)
+
+    @property
+    def x_margin(self):
+        return DISPLAY_MARGINS[0]
+
+    @property
+    def y_margin(self):
+        return DISPLAY_MARGINS[1]
+
+    @property
+    def left(self):
+        return self.x_margin
+
+    @property
+    def right(self):
+        return self.bg_image.width - self.x_margin
+
+    @property
+    def top(self):
+        return self.y_margin
+
+    @property
+    def bottom(self):
+        return self.bg_image.height - self.y_margin
+
+    def generate_base_image(self):
+        """Generate image containing background and moon (no text)
+
+        The result will be reduced to the given output palette and dithered, but it
+        will be in "RGB" mode(i.e., not "P" mode) for further processing.
+        """
+        # Draw moon
+        lunation = self.settings.moon.lunation
+        text = self.settings.moon.text
+        moon_img_size = (MOON_SIZE_PX, MOON_SIZE_PX)
+        moon_img = load_image(get_moon_img_path(lunation, text))
+        moon_img = moon_img.resize(moon_img_size)
+        moon_coords = (
+            self.x_center - int(moon_img.width / 2),
+            self.y_center - int(moon_img.height / 2) + 20,
+        )
+
+        image = self.bg_image.copy()
+        image.paste(moon_img, moon_coords, moon_img)
+
+        image = paletize_image(image, self.settings.output_palette, dither=True)
+        return image.convert("RGB")
+
+    def add_image_text(self, image: Image.Image):
+        quotation_font = get_font("quote", self.settings.font_size)
+        credit_font = get_font("credit")
+        date_and_phase_font = get_font("date_and_phase")
+
+        # Grabs today's date and formats it for display
+        date_to_show = self.settings.now.strftime("%A, %B %-d")
+
+        draw = ImageDraw.Draw(image)
+        draw.fontmode = "L" if FONT_ANTIALIASING else "1"
+        # Draw quote and credit
+        draw.text(
+            (self.x_center, self.top + 5),
+            self.settings.quotation_text,
+            font=quotation_font,
+            fill=0,
+            anchor="mt",
+        )
+        if self.settings.credit_text:
+            draw.text(
+                (self.right - 5, self.top + 40),
+                f"\N{HORIZONTAL BAR} {self.settings.credit_text}",
+                font=credit_font,
+                fill=0,
+                anchor="rm",
+            )
+
+        # Draw date
+        draw.text(
+            (self.left + 10, self.bottom - 38),
+            date_to_show,
+            font=date_and_phase_font,
+            fill=WHITE,
+            anchor="lt",
+        )
+        # Draw moon phase
+        draw.text(
+            (self.right - 10, self.bottom - 38),
+            self.settings.moon.text,
+            font=date_and_phase_font,
+            fill=WHITE,
+            anchor="rt",
+        )
+
+    def add_image_battery_indicator(self, image: Image.Image):
+        battery_img = load_image(BATTERY_INDICATOR_IMAGE)
+        coords = (self.left + 10, self.top + 64)
+        image.paste(battery_img, coords, battery_img)
+
+
 def generate_image(
     now: arrow.Arrow,
     quotation_text: str,
     credit_text: str,
     font_size: int,
-    background_img: Path,
-    moon_phase_text: str,
-    moon_phase_lunation: float,
+    moon_info: MoonInfo,
     battery_charge_percent: float,
-    epd,
-):
-    quotation_font = get_font("quote", font_size)
-    credit_font = get_font("credit")
-    date_and_phase_font = get_font("date_and_phase")
-
-    # Grabs today's date and formats it for display
-    date_to_show = now.strftime("%A, %B %-d")
-
-    # Note that you will need to create your own images and possibly change the image directory below
-    logger.info("Opening background image file")
-    h_image = Image.open(background_img)
-
-    # set margins
-    x_margin, y_margin = DISPLAY_MARGINS
-    x_center = int(h_image.width / 2)
-    y_center = int(h_image.height / 2)
-    left = x_margin
-    right = h_image.width - x_margin
-    top = y_margin
-    bottom = h_image.height - y_margin
-
-    # Draw moon
-    moon_img_size = (MOON_SIZE_PX, MOON_SIZE_PX)
-    moon_img = Image.open(get_moon_img_path(moon_phase_lunation, moon_phase_text))
-    moon_img = moon_img.resize(moon_img_size)
-    moon_coords = (
-        x_center - int(moon_img.width / 2),
-        y_center - int(moon_img.height / 2) + 20,
-    )
-
-    h_image.paste(moon_img, moon_coords, moon_img)
-
-    draw = ImageDraw.Draw(h_image)
-    draw.fontmode = "L" if FONT_ANTIALIASING else "1"
-    # Draw quote and credit
-    draw.text(
-        (x_center, top + 5),
+    output_palette: t.Iterable[int],
+) -> Image.Image:
+    settings = ImageSettings(
+        now,
         quotation_text,
-        font=quotation_font,
-        fill=0,
-        anchor="mt",
+        credit_text,
+        font_size,
+        moon_info,
+        battery_charge_percent,
+        output_palette,
     )
-    if credit_text:
-        draw.text(
-            (right - 5, top + 40),
-            f"\N{HORIZONTAL BAR} {credit_text}",
-            font=credit_font,
-            fill=0,
-            anchor="rm",
-        )
-
-    # Draw date
-    draw.text(
-        (left + 10, bottom - 38),
-        date_to_show,
-        font=date_and_phase_font,
-        fill=epd.WHITE,
-        anchor="lt",
-    )
-    # Draw moon phase
-    draw.text(
-        (right - 10, bottom - 38),
-        moon_phase_text,
-        font=date_and_phase_font,
-        fill=epd.WHITE,
-        anchor="rt",
-    )
-
-    # Draw battery low indicator (if applicable)
-    if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
-        logger.info(f"Battery level is {battery_charge_percent}%.")
-    else:
-        logger.warning(f"Battery low ({battery_charge_percent}%).")
-        battery_img = Image.open(BATTERY_INDICATOR_IMAGE)
-        x = left + 10
-        y = top + 64
-        h_image.paste(battery_img, (x, y), battery_img)
-    return h_image
+    builder = ImageBuilder(settings)
+    image = builder.build()
+    return image
 
 
 def load_quotations() -> list[list[str]]:
@@ -346,7 +509,7 @@ def load_quotations() -> list[list[str]]:
         ]
     """
     with QUOTATION_FILE.open() as fp:
-        reader = csv.reader(fp)
+        reader = csv.reader(fp, skipinitialspace=True)
         # Skip the header row
         next(reader)
         # Convert the remaining rows to a list
@@ -372,6 +535,8 @@ def get_banner_text(now: arrow.Arrow):
         # set the variables to print the text later
         quotation_text, credit_text = random_row
         font_size = get_font_size_for_quote(quotation_text)
+    logger.info(f"Quote: {quotation_text} -- {credit_text}")
+    logger.info(f"Font size: {font_size}")
     return (quotation_text, credit_text, font_size)
 
 
@@ -391,11 +556,16 @@ def get_font_size_for_quote(quotation_text) -> int:
     return 16
 
 
-def get_battery_charge_percent():
+def get_battery_charge_percent() -> t.Union[float, None]:
     # get battery charge info from the PiJuice and set charge_pct to that value
-    pj = pijuice.PiJuice(1, 0x14)  # create an instance of the PiJuice class
-    battery_info = pj.status.GetChargeLevel()  # get the battery charge level
-    charge_pct = format(battery_info["data"])
+    # pj = pijuice.PiJuice(1, 0x14)  # create an instance of the PiJuice class
+    conn, event_conn = pisugar.connect_tcp("localhost")
+    if event_conn is None:
+        return None
+    ps = pisugar.PiSugarServer(conn, event_conn)
+    # battery_info = pj.status.GetChargeLevel()  # get the battery charge level
+    # charge_pct = format(battery_info["data"])
+    charge_pct = 100
     return charge_pct
 
 
@@ -406,25 +576,25 @@ if __name__ == "__main__":
     charge_pct = 100  # FIXME: debug only
 
     now = arrow.now()
-    moon_phase_lunation, moon_phase_percent, moon_phase_text = get_moon_phase(now)
+    moon_info = get_moon_phase(now)
+    logger.info(f"Date: {now}")
+    logger.info("{moon_info}")
 
     epd = get_epd()
 
     quotation_text, credit_text, font_size = get_banner_text(now)
 
-    h_image = generate_image(
+    output_palette = epd_get_palette(epd)
+    image = generate_image(
         now,
         quotation_text,
         credit_text,
         font_size,
-        BACKGROUND_IMAGE,
-        moon_phase_text,
-        moon_phase_lunation,
+        moon_info,
         charge_pct,
-        epd,
+        output_palette,
     )
-
-    epd_update_image(epd, h_image)
+    epd_update_image(epd, image)
 
     # TODO: uncomment this before deploying
     # call("sudo shutdown -h now", shell=True)
