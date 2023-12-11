@@ -570,8 +570,8 @@ def get_battery_charge_percent() -> t.Union[float, None]:
     logger.info(f"    charging={charging}")
     if charging:
         logger.info(f"      (time until full {ps.get_battery_full_charge_duration()})")
-    logger.info(f"    current={ps.get_battery_current()} A")
-    logger.info(f"    voltage={ps.get_battery_voltage()} V")
+    logger.info(f"    current={1000 * ps.get_battery_current():.3f} mA")
+    logger.info(f"    voltage={ps.get_battery_voltage():.3f} V")
     return charge_pct
 
 
@@ -583,7 +583,7 @@ if __name__ == "__main__":
     now = arrow.now()
     moon_info = get_moon_phase(now)
     logger.info(f"Date: {now}")
-    logger.info("{moon_info}")
+    logger.info(f"{moon_info}")
 
     epd = get_epd()
 
