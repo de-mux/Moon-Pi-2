@@ -217,12 +217,6 @@ def load_image(img_path: Path) -> Image.Image:
             img = img.convert("RGBA")
     elif img.mode != "RGB":
         img = img.convert("RGB")
-    # img.palette  # dict[tuple, int]
-    # img.getcolors()  # list[tuple]
-    # img.getpalette()  # flat list[int]
-    # img.has_transparency_data
-    # img.im.getpalettemode()  # RGB
-    # img.mode  # e.g. RGB, P
     return img
 
 
@@ -336,7 +330,7 @@ class ImageSettings:
     credit_text: str
     font_size: int
     moon: MoonInfo
-    battery_charge_percent: float
+    battery_charge_percent: t.Optional[float]
     output_palette: t.Iterable[int]
 
 
@@ -355,11 +349,12 @@ class ImageBuilder:
 
         # Draw battery low indicator (if applicable)
         battery_charge_percent = self.settings.battery_charge_percent
-        if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
-            logger.info(f"Battery level is {battery_charge_percent}%.")
-        else:
-            logger.warning(f"Battery low ({battery_charge_percent}%).")
-            self.add_image_battery_indicator(image)
+        if battery_charge_percent is not None:
+            if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
+                logger.info(f"Battery level is {battery_charge_percent}%.")
+            else:
+                logger.warning(f"Battery low ({battery_charge_percent}%).")
+                self.add_image_battery_indicator(image)
 
         image = paletize_image(
             image,
@@ -479,7 +474,7 @@ def generate_image(
     credit_text: str,
     font_size: int,
     moon_info: MoonInfo,
-    battery_charge_percent: float,
+    battery_charge_percent: t.Optional[float],
     output_palette: t.Iterable[int],
 ) -> Image.Image:
     settings = ImageSettings(
@@ -557,23 +552,33 @@ def get_font_size_for_quote(quotation_text) -> int:
 
 
 def get_battery_charge_percent() -> t.Union[float, None]:
-    # get battery charge info from the PiJuice and set charge_pct to that value
-    # pj = pijuice.PiJuice(1, 0x14)  # create an instance of the PiJuice class
-    conn, event_conn = pisugar.connect_tcp("localhost")
+    try:
+        conn, event_conn = pisugar.connect_tcp()
+    except OSError:
+        logger.exception("Unable to connect to PiSugar server. Skipping battery check.")
+        return None
+
     if event_conn is None:
         return None
-    ps = pisugar.PiSugarServer(conn, event_conn)
-    # battery_info = pj.status.GetChargeLevel()  # get the battery charge level
-    # charge_pct = format(battery_info["data"])
-    charge_pct = 100
+
+    ps = pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
+    charge_pct = ps.get_battery_level()
+    charging = ps.get_battery_charging()
+
+    logger.info("Battery info:")
+    logger.info(f"    charge_level={charge_pct}%")
+    logger.info(f"    charging={charging}")
+    if charging:
+        logger.info(f"      (time until full {ps.get_battery_full_charge_duration()})")
+    logger.info(f"    current={ps.get_battery_current()} A")
+    logger.info(f"    voltage={ps.get_battery_voltage()} V")
     return charge_pct
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
-    # charge_pct = get_battery_charge_percent()
-    charge_pct = 100  # FIXME: debug only
+    charge_pct = get_battery_charge_percent()
 
     now = arrow.now()
     moon_info = get_moon_phase(now)
@@ -596,5 +601,5 @@ if __name__ == "__main__":
     )
     epd_update_image(epd, image)
 
-    # TODO: uncomment this before deploying
+    # FIXME: uncomment this before deploying
     # call("sudo shutdown -h now", shell=True)

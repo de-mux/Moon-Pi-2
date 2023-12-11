@@ -49,7 +49,8 @@ the following:
 1. Burn an image onto an SD card, such as Raspberry Pi OS Lite 32-bit (no need
    for "full" version or 64-bit). You may want to configure the image with WiFi
    credentials, a hostname, SSH access, etc.
-
+1. Connect the PiSugar power supply to the Raspberry Pi according to the
+   [official instructions](https://github.com/PiSugar/PiSugar/wiki/PiSugar2).
 1. Plug the SD card into the Pi, fire it up, and run some installs:
 
    ```bash
@@ -57,6 +58,12 @@ the following:
    sudo apt install python3-venv git
    sudo apt install libopenjp2-7      # for Python Pillow library
    curl https://pyenv.run | bash      # follow instructions for enabling pyenv in .bashrc
+
+   # PiSugar server (make sure to select the right PiSugar model -- the PiSugar 2
+   # (4-LED) if you bought it from the link above).
+   # If you mess up and choose the wrong one, you can run:
+   #     sudo dpkg-reconfigure pisugar-server
+   curl http://cdn.pisugar.com/release/pisugar-power-manager.sh | sudo bash
 
    # optional development tools
    sudo apt install zsh neovim
@@ -141,8 +148,8 @@ like:
 
 #### Setup Software
 
-Everything you need is in the moon-pi.py script in this repository. Read through
-it carefully -- it's copiously commented and will walk you through the
+Most of what you need is in the moon-pi.py script in this repository. Read
+through it carefully -- it's copiously commented and will walk you through the
 modifications you need to make so that, for example, it says "Happy Birthday!"
 on the right day. You may also need to make other modifications depending on
 choices you make in the first three steps of this guide. If you change text
