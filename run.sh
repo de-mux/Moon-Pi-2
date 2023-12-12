@@ -21,6 +21,17 @@ cleanup() {
 }
 
 
+# Rotate log file if necessary
+MAX_LOG_SIZE=10000
+if [ -f "$LOG_FILE" ]
+then
+    log_size=$(du -k "$LOG_FILE" | cut -f 1)
+    if [ $log_size -ge $MAX_LOG_SIZE ]; then
+        # rollover log file
+        savelog -n -l -c 2 "$LOG_FILE"
+    fi
+fi
+
 echo "----------------------------------------" >> "$LOG_FILE"
 echo "System date and time: $(date '+%d/%m/%Y %H:%M:%S')" >> "$LOG_FILE"
 echo "Kernel info: $(uname -rmv)" >> "$LOG_FILE"
