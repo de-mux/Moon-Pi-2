@@ -9,15 +9,17 @@ An ePaper moon calendar powered by Raspberry Pi
 - [Instructions](#instructions)
   - [Setup Raspberry Pi](#setup-raspberry-pi)
     - [Grab fonts](#grab-fonts)
+    - [Setup systemd service](#setup-systemd-service)
     - [Setup Software](#setup-software)
-    - [About The Moon Images](#about-the-moon-images)
-    - [Gather Quotations](#gather-quotations)
+    - [Customization](#customization)
+      - [About The Moon Images](#about-the-moon-images)
+      - [Quotations File](#quotations-file)
     - [Moon Phase Calculation](#moon-phase-calculation)
   - [Wire it Up](#wire-it-up)
     - [PiSugar power supply](#pisugar-power-supply)
     - [e-Paper display](#e-paper-display)
+  - [Run a quick test](#run-a-quick-test)
   - [Put Together The Frame](#put-together-the-frame)
-  - [The End](#the-end)
 - [Todo](#todo)
 
 <!-- vim-markdown-toc -->
@@ -47,8 +49,9 @@ the following:
 ### Setup Raspberry Pi
 
 1. Burn an image onto an SD card, such as Raspberry Pi OS Lite 32-bit (no need
-   for "full" version or 64-bit). You may want to configure the image with WiFi
-   credentials, a hostname, SSH access, etc.
+   for "full" version or 64-bit). You should configure the image with "moon" as
+   the username, WiFi credentials, a hostname (like moonpi), SSH access enabled,
+   etc.
 1. Connect the PiSugar power supply to the Raspberry Pi according to the
    [official instructions](https://github.com/PiSugar/PiSugar/wiki/PiSugar2).
 1. Plug the SD card into the Pi, fire it up, and run some installs:
@@ -63,6 +66,8 @@ the following:
    # (4-LED) if you bought it from the link above).
    # If you mess up and choose the wrong one, you can run:
    #     sudo dpkg-reconfigure pisugar-server
+   # PiSugar will ask you for a password for the web UI -- be aware that it
+   # stores this in plain text on your system.
    curl http://cdn.pisugar.com/release/pisugar-power-manager.sh | sudo bash
 
    # optional development tools
@@ -71,20 +76,15 @@ the following:
    sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
    ```
 
-1. Sync the RTC with the system clock
+1. Setup PiSugar RTC and auto-boot.
 
-   - First make sure your system clock is accurate, otherwise sync it with an
-     NTP server
-   - Login to the PiSugar power manager server and sync "Web > Pi & RTC". This
-     should synchronize both the RPi system clock and the PiSugar's RTC with an
-     internet NTP server
-
-1. Clone the repo
-
-```bash
-cd ~
-git clone https://github.com/de-mux/Moon-Pi
-```
+   - Login to the PiSugar power manager server
+   - **Sync the RTC/system clock** by going into the sync settings and sync
+     "Web > Pi & RTC". This should synchronize both the RPi system clock and the
+     PiSugar's RTC with an internet NTP server
+   - **Enable autoboot** by changing "Scheduled Wake Up" to "enabled" and choose
+     a suitable time, for example 1:00AM
+   - Note: you can also manually edit `/etc/pisugar-server/config.json`
 
 1. Enable the SPI interface (used by the e-Paper display):
 
@@ -99,6 +99,15 @@ git clone https://github.com/de-mux/Moon-Pi
      coverage. You can use `ls /dev/spi\*` to check whether SPI is occupied. If
      the terminal outputs `/dev/spidev0.1` and `/dev/spidev0.1`, SPI is not
      occupied.
+
+1. Clone the repo
+
+```bash
+cd ~
+git clone https://github.com/de-mux/Moon-Pi
+```
+
+This should put the Moon-Pi directory under your home directory.
 
 1. Setup Python.
 
@@ -155,31 +164,41 @@ like:
 
 - [Luminari](https://dafont101.com/luminari-font/)
 
-#### Setup Software
+#### Setup systemd service
 
-Most of what you need is in the moon-pi.py script in this repository. Read
-through it carefully -- it's copiously commented and will walk you through the
-modifications you need to make so that, for example, it says "Happy Birthday!"
-on the right day. You may also need to make other modifications depending on
-choices you make in the first three steps of this guide. If you change text
-lengths or images or how the moon data is formatted, you may need to tweak the
-script.
+```bash
+cd ~/Moon-Pi
+sudo cp moonpi.service /etc/systemd/system
+systemctl enable moonpi
+```
 
-You'll need to set up either a cronjob or a system service to run the moon-pi
-script on reboot. In my experience, it was easier to use `systemd`, but YMMV.
-Also, note that you'll need to build in some delay time between booting the Pi
-and running the script. Otherwise, the script encounters errors by running
-before it has permissions for everything it needs. I use a 65-second delay and
-it works great.
+Now the Moon Pi script will run once at startup.
 
 Once you've got it all set up, remember that when the Pi boots, it'll only run
 for a few minutes before shutting itself down. So if you realize you need to fix
 or tweak something, you'll need to be sure to SSH into the PI and avail yourself
-of `pkill` before the script stops. (In my experience, there's plenty of time to
-do this. And if you miss your window, you can always reboot the Pi and try
-again!)
+of `pkill` before the script stops.
 
-#### About The Moon Images
+#### Setup Software
+
+Take a look at the `moon-pi.py` script in this repository. Some things you may
+want to change:
+
+- `BIRTHDAY_MONTH` AND `BIRTHDAY_DAY` (so it says "Happy Birthday!" on the
+  recipient's birthday)
+- `FONTS` if you want to use your own fonts
+- `WAVESHARE_DISPLAY` if you use a different one than what's used in these
+  instructions
+  - Note: if you change this, you may need to tweak `DISPLAY_MARGINS`,
+    `MOON_SIZE_PX` and some of the values under the methods of the
+    `ImageBuilder` class
+- `LOCATION` based on where the recipient lives
+- `BATTERY_LOW_THRESHOLD` to display the battery low indicator at a different
+  threshold
+
+#### Customization
+
+##### About The Moon Images
 
 The moon images and background image included were obtained from
 [NASA Dial-A-Moon](https://svs.gsfc.nasa.gov/gallery/moonphase/), which are
@@ -217,7 +236,7 @@ mkdir converted
 for f in /path/to/images/*.png; do magick $f -dither FloydSteinberg -remap images/waveshare-7color-palette.png "converted/$(basename "$f")"; done
 ```
 
-#### Gather Quotations
+##### Quotations File
 
 You'll have to find your own quotations. I've put a few in the sample file for
 you. Note that one field measures the character length of the quotation. This is
@@ -276,6 +295,25 @@ to connect the display to the Pi
 | 23      | SCLK        | SCLK        |
 | 24      | CE0         | CS          |
 
+### Run a quick test
+
+```bash
+cd ~/Moon-Pi
+pyenv activate moonpi
+python moon_pi.py
+```
+
+This should update the display with a moon image for the current date.
+
+Test that the systemd service will run the Moon Pi script at startup by powering
+the device off and on. After 30-45 seconds, the script should run, updating the
+display. If it didn't work, you can check the logs:
+
+```bash
+cat ~/moonpi.log  # for the script log file
+journalctl -u moonpi.service  # for the systemd log
+```
+
 ### Put Together The Frame
 
 Any properly sized frame should work. I used a shadow box, linked above. Once
@@ -297,10 +335,6 @@ USB cable, then stapled a Velcro cable wrap to the back panel for cable
 management. You can probably come up with something nicer! Don't forget that you
 need a way to keep the back panel in place -- I used some frame turn fasteners
 from Amazon. Piece of cake.
-
-### The End
-
-OK, that's the process! Enjoy!
 
 ## Todo
 
