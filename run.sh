@@ -13,13 +13,14 @@ then
   LOG_FILE="$HOME/moonpi.log"
 fi
 
+
 trap cleanup SIGINT SIGTERM ERR EXIT
 cleanup() {
   trap - SIGINT SIGTERM ERR EXIT
-  echo "run.sh exited abnormally"
+  echo "run.sh exited abnormally" >> "$LOG_FILE"
 }
 
-# Append information to the log file.
+
 echo "----------------------------------------" >> "$LOG_FILE"
 echo "System date and time: $(date '+%d/%m/%Y %H:%M:%S')" >> "$LOG_FILE"
 echo "Kernel info: $(uname -rmv)" >> "$LOG_FILE"
@@ -30,6 +31,10 @@ export PYENV_ROOT="$HOME/.pyenv"
 eval "$(pyenv init -)"
 eval "$(pyenv virtualenv-init -)"
 
-pyenv activate moonpi &>> $LOG_FILE
+pyenv activate moonpi &>> "$LOG_FILE"
 cd /home/moon/Moon-Pi
-python moon_pi.py &>> $LOG_FILE
+python moon_pi.py &>> "$LOG_FILE"
+
+echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
+sleep 10
+shutdown now

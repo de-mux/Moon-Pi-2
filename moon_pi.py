@@ -732,6 +732,3 @@ if __name__ == "__main__":
         output_palette,
     )
     epd_update_image(epd, image)
-
-    # FIXME: uncomment this before deploying
-    # call("sudo shutdown -h now", shell=True)
