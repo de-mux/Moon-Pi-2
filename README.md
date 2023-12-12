@@ -328,14 +328,6 @@ Don't screw all the way through -- there isn't enough space between the insert
 and the frame itself to accomodate a screw poking out! I used nylon spacers to
 keep the Pi and PiSugar from touching the insert.
 
-The back panels of most frames and shadow boxes are too flimsy for my purposes,
-so I cut a piece of thin plywood to size, then drilled ventilation holes. (A Pi
-Zero shouldn't have any heat issues, but I'm paranoid.) I also cut a slot for a
-USB cable, then stapled a Velcro cable wrap to the back panel for cable
-management. You can probably come up with something nicer! Don't forget that you
-need a way to keep the back panel in place -- I used some frame turn fasteners
-from Amazon. Piece of cake.
-
 ## Todo
 
 - Ideas for stats:
