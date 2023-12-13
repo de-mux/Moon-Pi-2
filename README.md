@@ -9,6 +9,7 @@ An ePaper moon calendar powered by Raspberry Pi
 - [Instructions](#instructions)
   - [Setup Raspberry Pi](#setup-raspberry-pi)
     - [Grab fonts](#grab-fonts)
+    - [Disable unneeded services](#disable-unneeded-services)
     - [Setup systemd service](#setup-systemd-service)
     - [Setup Software](#setup-software)
     - [Customization](#customization)
@@ -163,6 +164,21 @@ like:
 ```
 
 - [Luminari](https://dafont101.com/luminari-font/)
+
+#### Disable unneeded services
+
+```bash
+sudo systemctl disable hciuart
+sudo systemctl disable bluealsa
+sudo systemctl disable bluetooth
+```
+
+Edit `/boot/config.txt` and add the following lines:
+
+```bash
+# Disable Bluetooth
+dtoverlay=disable-bt
+```
 
 #### Setup systemd service
 

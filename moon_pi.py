@@ -679,6 +679,7 @@ def get_font_size_for_quote(quotation_text) -> int:
     return 16
 
 
+@lru_cache
 def get_pisugar_server() -> t.Union[pisugar.PiSugarServer, None]:
     try:
         conn, event_conn = pisugar.connect_tcp()
@@ -748,3 +749,5 @@ if __name__ == "__main__":
         output_palette,
     )
     epd_update_image(epd, image)
+
+    get_battery_charge_percent()
