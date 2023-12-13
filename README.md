@@ -20,6 +20,7 @@ An ePaper moon calendar powered by Raspberry Pi
     - [PiSugar power supply](#pisugar-power-supply)
     - [e-Paper display](#e-paper-display)
   - [Run a quick test](#run-a-quick-test)
+    - [Final test](#final-test)
   - [Troubleshooting](#troubleshooting)
   - [Put Together The Frame](#put-together-the-frame)
 - [Todo](#todo)
@@ -65,7 +66,8 @@ the following:
    curl https://pyenv.run | bash      # follow instructions for enabling pyenv in .bashrc
 
    # PiSugar server (make sure to select the right PiSugar model -- the PiSugar 2
-   # (4-LED) if you bought it from the link above).
+   # (2-LED) if you bought it from the link above). Hint: look at the number of
+   #    LEDs next to the PiSugar charging port.
    # If you mess up and choose the wrong one, you can run:
    #     sudo dpkg-reconfigure pisugar-server
    # PiSugar will ask you for a password for the web UI -- be aware that it
@@ -189,8 +191,12 @@ dtoverlay=disable-bt
 ```bash
 cd ~/Moon-Pi
 sudo cp moonpi.service /etc/systemd/system
-systemctl enable moonpi
+sudo systemctl enable moonpi
 ```
+
+Note that the `sudo` before the `systemctl` command is important, because
+although the script is run as the user, it needs sudo to issue the shutdown
+command.
 
 Now the Moon Pi script will run once at startup.
 
@@ -325,6 +331,13 @@ python moon_pi.py
 
 This should update the display with a moon image for the current date.
 
+Note that running the script by itself will not power down the Pi -- this is
+done in the run.sh script that is run by the systemd service. This way you can
+test the script without worrying about the device rebooting and kicking you out
+every time.
+
+#### Final test
+
 Test that the systemd service will run the Moon Pi script at startup by powering
 the device off and on. After 30-45 seconds, the script should run, updating the
 display. If it didn't work, you can check the logs:
@@ -334,7 +347,17 @@ cat ~/moonpi.log  # for the script log file
 journalctl -u moonpi.service  # for the systemd log
 ```
 
+If you need to, you can disable auto-shutdown in the service by creating a file
+in `$HOME` called `noshutdown`. Just remember to remove it again after you're
+done debugging so the device doesn't remain on indefinitely.
+
 ### Troubleshooting
+
+To check on status of moonpi.service:
+
+```bash
+journalctl status moonpi
+```
 
 For system boot information, you can use journalctl:
 
