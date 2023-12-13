@@ -53,7 +53,7 @@ python moon_pi.py &>> "$LOG_FILE"
 
 
 if [ -f "$SHUTDOWN_DISABLE_FILE" ]; then
-    echo "$SHUTDOWN_DISABLE_FILE found. Disabling auto-shutdown."
+    echo "$SHUTDOWN_DISABLE_FILE found. Disabling auto-shutdown." >> "$LOG_FILE"
     exit 0
 else
     echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
