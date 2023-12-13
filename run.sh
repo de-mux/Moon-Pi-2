@@ -50,4 +50,4 @@ echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
 sleep 10
 # revert trap
 trap - SIGINT SIGTERM ERR EXIT
-shutdown now
+sudo shutdown now
