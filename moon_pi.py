@@ -4,7 +4,6 @@
 # reference: https://svs.gsfc.nasa.gov/5048/
 
 import csv
-import logging
 import math
 import random
 import types
@@ -17,6 +16,7 @@ from unittest.mock import MagicMock
 import arrow
 import ephem
 import pisugar
+from loguru import logger
 from PIL import Image, ImageDraw, ImageFont
 
 try:
@@ -124,9 +124,6 @@ BATTERY_LOW_THRESHOLD = 20
 
 MOON_QUARTERS = ["New Moon", "First Quarter", "Full Moon", "Third Quarter"]
 MOON_PHASES = ["Waxing Crescent", "Waxing Gibbous", "Waning Gibbous", "Waning Crescent"]
-
-
-logger = logging.getLogger("moonpi")
 
 
 # --------------- LUNAR PHASE ------------------
@@ -691,7 +688,10 @@ def get_pisugar_server() -> t.Union[pisugar.PiSugarServer, None]:
         logger.error("Unable to connect to PiSugar server. event_conn is None")
         return None
 
-    return pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
+    ps = pisugar.PiSugarServer(conn, event_conn)  # pyright: ignore
+    logger.info("PiSugar server is running")
+    logger.info(f"PiSugar model: {ps.get_model()!r}")
+    return ps
 
 
 def sync_rtc_to_system_clock():
@@ -699,11 +699,11 @@ def sync_rtc_to_system_clock():
     if not ps:
         logger.warning("PiSugar server not found. Could not sync RTC to system clock.")
         return
-    logger.debug(f"System time previous to RTC sync: {arrow.now()}")
+    logger.debug(f"System time before RTC sync: {arrow.now()}")
     logger.info("Syncing system clock to PiSugar RTC")
     ps.rtc_rtc2pi()
     logger.info("Syncing system clock to PiSugar RTC... done")
-    logger.debug(f"System time after RTC sync: {arrow.now()}")
+    logger.debug(f"System time after  RTC sync: {arrow.now()}")
 
 
 def get_battery_charge_percent() -> t.Union[float, None]:
@@ -725,8 +725,6 @@ def get_battery_charge_percent() -> t.Union[float, None]:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
     sync_rtc_to_system_clock()
     charge_pct = get_battery_charge_percent()
 
