@@ -20,6 +20,7 @@ An ePaper moon calendar powered by Raspberry Pi
     - [PiSugar power supply](#pisugar-power-supply)
     - [e-Paper display](#e-paper-display)
   - [Run a quick test](#run-a-quick-test)
+  - [Troubleshooting](#troubleshooting)
   - [Put Together The Frame](#put-together-the-frame)
 - [Todo](#todo)
 
@@ -85,14 +86,17 @@ the following:
      PiSugar's RTC with an internet NTP server
    - **Enable autoboot** by changing "Scheduled Wake Up" to "enabled" and choose
      a suitable time, for example 1:00AM
-   - Note: you can also manually edit `/etc/pisugar-server/config.json`
+   - Note: you can also manually edit `/etc/pisugar-server/config.json`,
+     `/etc/default/pisugar-server`, and `/etc/default/pisugar-poweroff`
 
-1. Enable the SPI interface (used by the e-Paper display):
+1. Enable the SPI interface (used by the e-Paper display) and the I2C interface
+   (used by PiSugar):
 
    - ```bash
      sudo raspi-config
      ```
    - Choose Interfacing Options -> SPI -> Yes Enable SPI interface
+   - Choose Interfacing Options -> I2C -> Yes
    - Reboot: `sudo shutdown -r now`
    - `cat /boot/config.txt | grep dtparam`, and verify you see `dtparam=spi=on`
      there
@@ -328,6 +332,19 @@ display. If it didn't work, you can check the logs:
 ```bash
 cat ~/moonpi.log  # for the script log file
 journalctl -u moonpi.service  # for the systemd log
+```
+
+### Troubleshooting
+
+For system boot information, you can use journalctl:
+
+```bash
+# Show systemd logs for current boot
+journalctl -b
+# List all boot timestamps
+journalctl --list-boots
+# Show previous boot
+journalctl -b -1
 ```
 
 ### Put Together The Frame
