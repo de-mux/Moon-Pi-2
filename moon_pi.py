@@ -4,6 +4,8 @@
 # reference: https://svs.gsfc.nasa.gov/5048/
 
 import csv
+import inspect
+import logging
 import math
 import random
 import types
@@ -724,7 +726,31 @@ def get_battery_charge_percent() -> t.Union[float, None]:
     return charge_pct
 
 
+# ------------- Logging ----------------
+
+class InterceptHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        # Get corresponding Loguru level if it exists.
+        level: str | int
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # Find caller from where originated the logged message.
+        frame, depth = inspect.currentframe(), 0
+        while frame and (depth == 0 or frame.f_code.co_filename == logging.__file__):
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+# ------------- MAIN -------------------
+
 if __name__ == "__main__":
+    logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+
     sync_rtc_to_system_clock()
     charge_pct = get_battery_charge_percent()
 
