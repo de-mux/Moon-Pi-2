@@ -98,7 +98,7 @@ WAVESHARE_DISPLAY = "epd7in3f"
     >>> epaper.modules()
 """
 
-FONT_ANTIALIASING = True
+FONT_ANTIALIASING = False
 """Whether or not to enable antialiasing for fonts. Generally this should be
 False for displays with limited color palettes.
 """
@@ -132,6 +132,11 @@ logger = logging.getLogger("moonpi")
 # --------------- LUNAR PHASE ------------------
 
 
+def _arrow_to_ephem(dt: arrow.Arrow) -> ephem.Date:
+    """Convert Arrow date object to ephem.Date."""
+    return ephem.Date(dt.datetime)
+
+
 @dataclass
 class MoonInfo:
     lunation: float
@@ -149,7 +154,7 @@ def _get_moon_cycle_range(date: ephem.Date) -> tuple[ephem.Date, ephem.Date]:
 
 
 def _within_a_day(first: ephem.Date, second: ephem.Date):
-    return abs(int(second) - int(first)) < 1
+    return abs(second - first) <= 0.5
 
 
 def _get_moon_phase_text(date: ephem.Date):
@@ -184,15 +189,20 @@ def _get_lunation(date: ephem.Date):
 
 
 def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
+    """Get the moon info for the 24-hour period, centered around the midpoint of the
+    given day.
+    """
+    middle_of_day = dt.replace(hour=12)
+    text = _get_moon_phase_text(_arrow_to_ephem(middle_of_day))
+
     earth = ephem.Observer()
     earth.lat = math.radians(LOCATION["latitude"])
     earth.long = math.radians(LOCATION["longitude"])
-    earth.date = ephem.Date(dt.datetime)
+    earth.date = _arrow_to_ephem(dt)
 
     moon = ephem.Moon(earth)
     phase_percent = moon.phase
 
-    text = _get_moon_phase_text(earth.date)
     lunation = _get_lunation(earth.date)
 
     return MoonInfo(lunation, phase_percent, text)
