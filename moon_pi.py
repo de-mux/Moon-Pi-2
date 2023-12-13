@@ -205,7 +205,6 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     earth.date = _arrow_to_ephem(middle_of_day)
 
     moon = ephem.Moon(earth)
-    breakpoint()
     phase_percent = moon.phase
 
     normalized_age = _get_normalized_age(earth.date)
