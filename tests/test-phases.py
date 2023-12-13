@@ -24,7 +24,7 @@ def test_phases(palette):
 
         quote, credit, font_size = moon_pi.get_banner_text(now)
 
-        print(now.strftime("%Y-%m-%d %H"), moon_info.text, moon_info.lunation)
+        print(now.strftime("%Y-%m-%d %H"), moon_info.text, moon_info.normalized_age)
         img = moon_pi.generate_image(
             now,
             quote,

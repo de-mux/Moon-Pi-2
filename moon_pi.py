@@ -132,16 +132,19 @@ logger = logging.getLogger("moonpi")
 # --------------- LUNAR PHASE ------------------
 
 
+@dataclass
+class MoonInfo:
+    normalized_age: float
+    """Normalized age of the moon for the current lunation.
+    0 = new moon, ~1 = close to next new moon
+    """
+    phase_percent: float
+    text: str
+
+
 def _arrow_to_ephem(dt: arrow.Arrow) -> ephem.Date:
     """Convert Arrow date object to ephem.Date."""
     return ephem.Date(dt.datetime)
-
-
-@dataclass
-class MoonInfo:
-    lunation: float
-    phase_percent: float
-    text: str
 
 
 def _get_moon_cycle_range(date: ephem.Date) -> tuple[ephem.Date, ephem.Date]:
@@ -179,12 +182,13 @@ def _get_moon_phase_text(date: ephem.Date):
     return MOON_PHASES[-1]
 
 
-def _get_lunation(date: ephem.Date):
-    """Normalization of time between the date and the last new moon.
+def _get_normalized_age(date: ephem.Date):
+    """Get normalized age of the moon for the current lunation.
     0 = new moon, ~1 = close to next new moon
     """
     cycle_start, cycle_end = _get_moon_cycle_range(date)
     days_since_new = date - cycle_start
+    logger.debug(f"Moon is {days_since_new:.2f} day(s) since new")
     return (days_since_new / (cycle_end - cycle_start)) % 1.0
 
 
@@ -198,20 +202,21 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     earth = ephem.Observer()
     earth.lat = math.radians(LOCATION["latitude"])
     earth.long = math.radians(LOCATION["longitude"])
-    earth.date = _arrow_to_ephem(dt)
+    earth.date = _arrow_to_ephem(middle_of_day)
 
     moon = ephem.Moon(earth)
+    breakpoint()
     phase_percent = moon.phase
 
-    lunation = _get_lunation(earth.date)
+    normalized_age = _get_normalized_age(earth.date)
 
-    return MoonInfo(lunation, phase_percent, text)
+    return MoonInfo(normalized_age, phase_percent, text)
 
 
 # --------------- IMAGES -----------------
 
 
-def get_moon_img_path(lunation: float, moon_phase_text: str) -> Path:
+def get_moon_img_path(normalized_age: float, moon_phase_text: str) -> Path:
     moon_dir = IMAGE_DIR / "moon"
     if moon_phase_text in MOON_QUARTERS:
         postfix = moon_phase_text.lower().replace(" ", "-")
@@ -220,7 +225,7 @@ def get_moon_img_path(lunation: float, moon_phase_text: str) -> Path:
     moon_files = sorted(moon_dir.glob("*.png"))
     total_files = len(moon_files)
 
-    idx = round(lunation * total_files) % total_files
+    idx = round(normalized_age * total_files) % total_files
 
     return moon_files[idx]
 
@@ -526,10 +531,10 @@ class ImageBuilder:
         will be in "RGB" mode(i.e., not "P" mode) for further processing.
         """
         # Draw moon
-        lunation = self.settings.moon.lunation
+        normalized_age = self.settings.moon.normalized_age
         text = self.settings.moon.text
         moon_img_size = (MOON_SIZE_PX, MOON_SIZE_PX)
-        moon_img = load_image(get_moon_img_path(lunation, text))
+        moon_img = load_image(get_moon_img_path(normalized_age, text))
         moon_img = moon_img.resize(moon_img_size)
         moon_coords = (
             self.x_center - int(moon_img.width / 2),
@@ -694,9 +699,11 @@ def sync_rtc_to_system_clock():
     if not ps:
         logger.warning("PiSugar server not found. Could not sync RTC to system clock.")
         return
+    logger.debug(f"System time previous to RTC sync: {arrow.now()}")
     logger.info("Syncing system clock to PiSugar RTC")
     ps.rtc_rtc2pi()
     logger.info("Syncing system clock to PiSugar RTC... done")
+    logger.debug(f"System time after RTC sync: {arrow.now()}")
 
 
 def get_battery_charge_percent() -> t.Union[float, None]:

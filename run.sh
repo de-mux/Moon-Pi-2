@@ -33,7 +33,7 @@ then
 fi
 
 echo "----------------------------------------" >> "$LOG_FILE"
-echo "System date and time: $(date '+%d/%m/%Y %H:%M:%S')" >> "$LOG_FILE"
+echo "System date and time: $(date '+%Y/%m/%d %H:%M:%S')" >> "$LOG_FILE"
 echo "Kernel info: $(uname -rmv)" >> "$LOG_FILE"
 echo "Uptime: $(uptime)" >> "$LOG_FILE"
 
@@ -48,4 +48,6 @@ python moon_pi.py &>> "$LOG_FILE"
 
 echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
 sleep 10
+# revert trap
+trap - SIGINT SIGTERM ERR EXIT
 shutdown now
