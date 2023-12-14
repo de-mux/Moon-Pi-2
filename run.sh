@@ -56,9 +56,9 @@ if [ -f "$SHUTDOWN_DISABLE_FILE" ]; then
     echo "$SHUTDOWN_DISABLE_FILE found. Disabling auto-shutdown." >> "$LOG_FILE"
     exit 0
 else
-    echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
-    sleep 10
     # revert trap
     trap - SIGINT SIGTERM ERR
-    sudo shutdown now
+    echo "Shutting down system in 10 seconds." >> "$LOG_FILE"
+    sleep 10
+    sudo /usr/bin/systemctl --no-block --no-wall halt
 fi
