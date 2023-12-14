@@ -187,7 +187,7 @@ def _get_normalized_age(date: ephem.Date):
     """
     cycle_start, cycle_end = _get_moon_cycle_range(date)
     days_since_new = date - cycle_start
-    logger.debug(f"Moon is {days_since_new:.2f} day(s) since new")
+    logger.debug(f"Moon is {days_since_new:.2f} day(s) since new (as of {date} UTC)")
     return (days_since_new / (cycle_end - cycle_start)) % 1.0
 
 
@@ -478,9 +478,9 @@ class ImageBuilder:
         battery_charge_percent = self.settings.battery_charge_percent
         if battery_charge_percent is not None:
             if int(battery_charge_percent) > BATTERY_LOW_THRESHOLD:
-                logger.info(f"Battery level is {battery_charge_percent}%.")
+                logger.info(f"Battery level is {battery_charge_percent:.1f}%.")
             else:
-                logger.warning(f"Battery low ({battery_charge_percent}%).")
+                logger.warning(f"Battery low ({battery_charge_percent:.1f}%).")
                 self.add_image_battery_indicator(image)
 
         image = paletize_image(
@@ -717,16 +717,17 @@ def get_battery_charge_percent() -> t.Union[float, None]:
     charging = ps.get_battery_charging()
 
     logger.info("Battery info:")
-    logger.info(f"    charge_level={charge_pct}%")
+    logger.info(f"    charge_level={charge_pct:.1f}%")
     logger.info(f"    charging={charging}")
     if charging:
         logger.info(f"      (time until full {ps.get_battery_full_charge_duration()})")
     logger.info(f"    current={1000 * ps.get_battery_current():.3f} mA")
-    logger.info(f"    voltage={ps.get_battery_voltage():.3f} V")
+    logger.info(f"    voltage={ps.get_battery_voltage():.2f} V")
     return charge_pct
 
 
 # ------------- Logging ----------------
+
 
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
@@ -743,7 +744,9 @@ class InterceptHandler(logging.Handler):
             frame = frame.f_back
             depth += 1
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+        logger.opt(depth=depth, exception=record.exc_info).log(
+            level, record.getMessage()
+        )
 
 
 # ------------- MAIN -------------------

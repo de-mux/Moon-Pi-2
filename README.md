@@ -202,8 +202,10 @@ Now the Moon Pi script will run once at startup.
 
 Once you've got it all set up, remember that when the Pi boots, it'll only run
 for a few minutes before shutting itself down. So if you realize you need to fix
-or tweak something, you'll need to be sure to SSH into the PI and avail yourself
-of `pkill` before the script stops.
+or tweak something, you'll need to be sure to SSH into the PI and run
+`touch ~/noshutdown` before the script completes. The script will detect the
+presence of `~/noshutdown` and disable auto-shutdown. Don't forget to remove the
+file when you're done debugging.
 
 #### Setup Software
 
