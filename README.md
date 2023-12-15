@@ -169,7 +169,6 @@ like:
 ```
 
 - [Luminari](https://dafont101.com/luminari-font/)
-- [SourceSans3-Semibold](https://github.com/adobe-fonts/source-sans/blob/release/TTF/SourceSans3-Semibold.ttf)
 
 #### Disable unneeded services
 
