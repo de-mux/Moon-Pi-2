@@ -154,10 +154,10 @@ This should put the Moon-Pi directory under your home directory.
 
 #### Grab fonts
 
-Download the Luminari and SourceSans fonts into the Moon-Pi/fonts directory. If
-you decide to go with different fonts, you will need to update the `FONTS`
-constant in the `moon_pi.py` script to point to the right ones. The directory
-tree should look like:
+Download the Luminari font into the Moon-Pi/fonts directory. If you decide to go
+with different fonts, you will need to update the `FONTS` constant in the
+`moon_pi.py` script to point to the right ones. The directory tree should look
+like:
 
 ```plain
 ├── README.md

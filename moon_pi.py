@@ -92,7 +92,7 @@ WHITE = 0xFFFFFF
 
 IMAGE_DIR = BASE_DIR / "images"
 BACKGROUND_IMAGE = IMAGE_DIR / "screen-template-7in3.png"
-BATTERY_INDICATOR_IMAGE = IMAGE_DIR / "battery.png"  # from OpenMoji
+BATTERY_INDICATOR_IMAGE = IMAGE_DIR / "battery.png"  # modified icon from OpenMoji
 
 WAVESHARE_DISPLAY = "epd7in3f"
 """The display to use. To get a list of possibilities, use:
