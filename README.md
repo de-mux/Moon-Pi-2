@@ -25,6 +25,7 @@ An ePaper moon calendar powered by Raspberry Pi
   - [Troubleshooting](#troubleshooting)
   - [Put Together The Frame](#put-together-the-frame)
 - [Todo](#todo)
+- [License](#license)
 
 <!-- vim-markdown-toc -->
 
@@ -419,3 +420,14 @@ Connect all cables, power on the device, and you're done!
   - Moon illumination: 87.95%
   - Moon tilt: -34.731°
   - Moon sign: Cancer
+
+## License
+
+This project is licensed under GPL 3.0, except:
+
+- fonts/SourceSans3-Semibold.ttf
+  ([SIL Open Font License 1.1](./LICENSE_source-sans.md))
+- images/battery.png
+  ([Creative Commons Attribution Share Alike 4.0 International](./LICENSE_openmoji.txt))
+
+See [LICENSE](./LICENSE) for details.
