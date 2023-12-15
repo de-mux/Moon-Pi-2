@@ -1,11 +1,14 @@
 # Moon-Pi 2
 
-An ePaper moon calendar powered by Raspberry Pi
+An ePaper moon calendar powered by Raspberry Pi.
+
+Based on [Moon-Pi](https://github.com/barryl93/Moon-Pi).
 
 ![Final Build](./images/build/final.jpg)
 
 <!-- vim-markdown-toc GFM -->
 
+- [Materials](#materials)
 - [Instructions](#instructions)
   - [Setup Raspberry Pi](#setup-raspberry-pi)
     - [Grab fonts](#grab-fonts)
@@ -29,10 +32,13 @@ An ePaper moon calendar powered by Raspberry Pi
 
 <!-- vim-markdown-toc -->
 
+## Materials
+
 So you want to build a moon-a-day calendar! You'll need the following:
 
 - [Raspberry Pi Zero 2 W](https://www.amazon.com/gp/product/B09LH5SBPS) (or
-  Raspberry Pi Zero W)
+  Raspberry Pi Zero W, though I found the 2 to be more reliable for this
+  application)
 - SD card (4GB or more)
 - [Waveshare 7.3in 7-Color e-Paper Display HAT](https://www.waveshare.com/product/7.3inch-e-paper-hat-f.htm),
   800 x 480 pixels (can also be found on Amazon)
@@ -40,7 +46,7 @@ So you want to build a moon-a-day calendar! You'll need the following:
   with RTC
 - [5x7 Black Shadow Box](https://www.amazon.com/gp/product/B081J74KN7)
 - [5x7 Pre-Cut Mat Boards](https://www.amazon.com/gp/product/B08JTC2FYK) with
-  4x6 inner
+  4x6 inner, or cut your own
 - micro-USB to USB-A cable
 - (optional)
   [Raspberry Pi heatsinks](https://www.amazon.com/gp/product/B07ZLZRDXZ)
@@ -204,14 +210,14 @@ Note that the `sudo` before the `systemctl` command is important, because
 although the script is run as the user, it needs sudo to issue the shutdown
 command.
 
-Now the Moon Pi script will run once at startup.
+Now the Moon Pi script will run once at startup, and then the system will shut
+down(until woken up again the next day by the RTC).
 
-Once you've got it all set up, remember that when the Pi boots, it'll only run
-for a few minutes before shutting itself down. So if you realize you need to fix
-or tweak something, you'll need to be sure to SSH into the PI and run
-`touch ~/noshutdown` before the script completes. The script will detect the
-presence of `~/noshutdown` and disable auto-shutdown. Don't forget to remove the
-file when you're done debugging.
+When the Pi boots, it'll only run for about a minute before shutting itself
+down. So if you realize you need to fix or tweak something, you'll need to be
+sure to SSH into the Pi and run `touch ~/noshutdown` before the script
+completes. The script will detect the presence of `~/noshutdown` and disable
+auto-shutdown. Don't forget to remove the file when you're done debugging.
 
 #### Setup Software
 
