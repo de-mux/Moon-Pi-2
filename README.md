@@ -2,7 +2,7 @@
 
 An ePaper moon calendar powered by Raspberry Pi
 
-![IMG_9535](https://github.com/barryl93/Moon-Pi/assets/39839859/7b96522b-2f72-4b4d-bb55-57c7d8657edb)
+![Final Build](./images/build/final.jpg)
 
 <!-- vim-markdown-toc GFM -->
 
@@ -388,17 +388,23 @@ journalctl -b -1
 
 ### Put Together The Frame
 
-Any properly sized frame should work. I used a shadow box, linked above. Once
-you have the display and the mat in, I suggest screwing everything into place so
-that it doesn't jostle around. I tried cutting my own mats, but couldn't keep it
-neat -- a local frame shop was kind enough to cut several of them for me for a
-few bucks.
+Align the display with the mat and tape it into place. You may need to modify
+the insert that comes with the shadow box a little to accomodate things like the
+e-Paper cable. I cut out a slot for the e-Paper cable so the insert wasn't
+pressing up against it, and also cut some channels for the tie-wrap fasteners
+that I used to mount the Raspberry Pi and PiSugar assembly.
 
-My shadow box came with an insert designed to keep the back panel in place. I
-drilled some holes in that and mounted the Pi, the PiSugar, and the battery.
-Don't screw all the way through -- there isn't enough space between the insert
-and the frame itself to accomodate a screw poking out! I used nylon spacers to
-keep the Pi and PiSugar from touching the insert.
+Affix the RPi/PiSugar assembly to the shadow box insert, and check that it fits
+inside the shadow box. Make sure there is nothing touching the display that
+could damage it. You might want some padding to protect the back of the display
+from touching the Pi assembly.
+
+Drill a hole in the back panel for the PiSugar charging port.
+
+Mount the e-Paper HAT somehow (I used screws to mount it to the back of the back
+panel).
+
+Connect all cables, power on the device, and you're done!
 
 ## Todo
 
