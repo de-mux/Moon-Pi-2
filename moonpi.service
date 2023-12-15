@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Moon Pi script at startup
+Wants=pisugar-server.service
+
+[Service]
+User=moon
+Group=moon
+Type=oneshot
+ExecStart=/home/moon/Moon-Pi/run.sh
+
+[Install]
+WantedBy=default.target

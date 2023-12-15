@@ -1,0 +1,14 @@
+.python-version
+secret.txt
+fonts/Luminari*
+tests/output/
+
+__pycache__/
+.DS_Store
+__MACOSX/
+
+# Backup files
+*~
+
+test*.png
+test*.jpg

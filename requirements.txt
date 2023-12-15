@@ -1,0 +1,6 @@
+waveshare-epaper>=1.2.0
+pillow>=10.1.0
+pyephem>=4.1.5
+arrow>=1.3.0
+pisugar>=0.1.1
+loguru>=0.7.2
