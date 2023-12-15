@@ -177,6 +177,12 @@ like:
 sudo systemctl disable hciuart
 sudo systemctl disable bluealsa
 sudo systemctl disable bluetooth
+
+sudo systemctl disable man-db.timer
+sudo systemctl disable apt-daily.service
+sudo systemctl disable apt-daily.timer
+sudo systemctl disable apt-daily-upgrade.timer
+sudo systemctl disable apt-daily-upgrade.service
 ```
 
 Edit `/boot/config.txt` and add the following lines:

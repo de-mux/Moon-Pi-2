@@ -195,7 +195,7 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     """Get the moon info for the 24-hour period, centered around the midpoint of the
     given day.
     """
-    middle_of_day = dt.replace(hour=12)
+    middle_of_day = dt.replace(hour=12).floor("hour")
     text = _get_moon_phase_text(_arrow_to_ephem(middle_of_day))
 
     earth = ephem.Observer()
