@@ -425,9 +425,9 @@ Connect all cables, power on the device, and you're done!
 
 This project is licensed under GPL 3.0, except:
 
-- fonts/SourceSans3-Semibold.ttf
+- [./fonts/SourceSans3-Semibold.ttf](./fonts/SourceSans3-Semibold.ttf)
   ([SIL Open Font License 1.1](./LICENSE_source-sans.md))
-- images/battery.png
+- [./images/battery.png](./images/battery.png)
   ([Creative Commons Attribution Share Alike 4.0 International](./LICENSE_openmoji.txt))
 
 See [LICENSE](./LICENSE) for details.
