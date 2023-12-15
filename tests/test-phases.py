@@ -77,16 +77,30 @@ def test_blue_moon(palette):
     img.save(str(OUT_DIR / "test-blue-moon.png"))
 
 
-def test_find_next_supermoon():
+def test_next_supermoon():
     start = arrow.get(datetime(2023, 11, 5, 12), "US/Pacific")
-    end = arrow.get(datetime(2025, 12, 19, 12), "US/Pacific")
+    end = arrow.get(datetime(2024, 9, 18, 12), "US/Pacific")
     for dt in arrow.Arrow.range("day", start.datetime, end.datetime):
         now = dt
 
         moon_info = moon_pi.get_moon_phase(now)
         if moon_info.text == "Supermoon":
+            assert now == arrow.get(datetime(2024, 9, 17, 12), "US/Pacific")
             print(now)
-            exit()
+            return
+
+
+def test_next_blue_moon():
+    start = arrow.get(datetime(2023, 11, 5, 12), "US/Pacific")
+    end = arrow.get(datetime(2026, 6, 1, 12), "US/Pacific")
+    for dt in arrow.Arrow.range("day", start.datetime, end.datetime):
+        now = dt
+
+        moon_info = moon_pi.get_moon_phase(now)
+        if moon_info.text == "Blue Moon":
+            assert now == arrow.get(datetime(2026, 5, 31, 12), "US/Pacific")
+            print(now)
+            return
 
 
 if __name__ == "__main__":
@@ -95,6 +109,8 @@ if __name__ == "__main__":
 
     output_palette = moon_pi.epd_get_palette(epd)
 
+    test_next_supermoon()
+    test_next_blue_moon()
     test_blue_moon(output_palette)
     test_supermoon(output_palette)
     test_phases(output_palette)

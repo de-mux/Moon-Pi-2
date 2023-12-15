@@ -181,9 +181,11 @@ def _is_full_moon(date: ephem.Date) -> bool:
 
 
 def _is_blue_moon(date: ephem.Date) -> bool:
-    cycle_start, _ = _get_moon_cycle_range(date)
-    previous_full = ephem.previous_full_moon(cycle_start).datetime()
-    return date.datetime().month == previous_full.month
+    if _is_full_moon(date):
+        cycle_start, _ = _get_moon_cycle_range(date)
+        previous_full = ephem.previous_full_moon(cycle_start).datetime()
+        return date.datetime().month == previous_full.month
+    return False
 
 
 def _is_super_moon(date: ephem.Date) -> bool:

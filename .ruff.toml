@@ -20,6 +20,7 @@ select = [
 ]
 ignore = [
     "S311",  # cryptographic random number
+    "S101",  # assert statements
     "S602",  # using shell=True with subprocess
     "COM812",
     "TRY003", # long exception messages
