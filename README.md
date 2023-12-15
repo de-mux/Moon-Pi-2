@@ -1,4 +1,4 @@
-# Moon-Pi
+# Moon-Pi 2
 
 An ePaper moon calendar powered by Raspberry Pi
 
@@ -28,8 +28,7 @@ An ePaper moon calendar powered by Raspberry Pi
 
 <!-- vim-markdown-toc -->
 
-OK, so you want to build a moon-a-day calendar! Let's get started. You'll need
-the following:
+So you want to build a moon-a-day calendar! You'll need the following:
 
 - [Raspberry Pi Zero 2 W](https://www.amazon.com/gp/product/B09LH5SBPS) (or
   Raspberry Pi Zero W)
@@ -41,12 +40,11 @@ the following:
 - [5x7 Black Shadow Box](https://www.amazon.com/gp/product/B081J74KN7)
 - [5x7 Pre-Cut Mat Boards](https://www.amazon.com/gp/product/B08JTC2FYK) with
   4x6 inner
-- [Picture Frame Turn Fasteners](https://www.amazon.com/dp/B07WVWCYJ5)
 - micro-USB to USB-A cable
 - (optional)
   [Raspberry Pi heatsinks](https://www.amazon.com/gp/product/B07ZLZRDXZ)
-- a screwdriver, wires, screws, a drill, etc. Possibly some thin plywood and a
-  saw.
+- soldering iron, screwdriver, screws, standoffs, tape, a drill or Dremel tool,
+  etc.
 
 ## Instructions
 
@@ -156,10 +154,10 @@ This should put the Moon-Pi directory under your home directory.
 
 #### Grab fonts
 
-Download the Luminari font into the Moon-Pi/fonts directory. If you decide to go
-with different fonts, you will need to update the `FONTS` constant in the
-`moon_pi.py` script to point to the right ones. The directory tree should look
-like:
+Download the Luminari and SourceSans fonts into the Moon-Pi/fonts directory. If
+you decide to go with different fonts, you will need to update the `FONTS`
+constant in the `moon_pi.py` script to point to the right ones. The directory
+tree should look like:
 
 ```plain
 ├── README.md
@@ -171,6 +169,7 @@ like:
 ```
 
 - [Luminari](https://dafont101.com/luminari-font/)
+- [SourceSans3-Semibold](https://github.com/adobe-fonts/source-sans/blob/release/TTF/SourceSans3-Semibold.ttf)
 
 #### Disable unneeded services
 
@@ -310,6 +309,13 @@ Here's the
 [PiSugar install guide](https://github.com/PiSugar/PiSugar/wiki/PiSugar2).
 You'll need this to walk you through setting up the PiSugar to wake up the Pi on
 a schedule.
+
+Before connecting the PiSugar to the Pi, solder the Pi header on so you can
+connect the e-Paper display wires in the next step. The PiSugar uses pogo pins
+to interface with the RPi, so they should work even when the header is
+populated. Alternatively, you can pull the 6 pins of the header corresponding to
+the PiSugar's pins prior to soldering so you can get a slightly more comfortable
+fit.
 
 | RPi pin | Description | PiSugar pin |
 | ------- | ----------- | ----------- |
