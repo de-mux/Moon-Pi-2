@@ -196,7 +196,6 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     given day.
     """
     middle_of_day = dt.replace(hour=12).floor("hour")
-    text = _get_moon_phase_text(_arrow_to_ephem(middle_of_day))
 
     earth = ephem.Observer()
     earth.lat = math.radians(LOCATION["latitude"])
@@ -206,6 +205,7 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     moon = ephem.Moon(earth)
     phase_percent = moon.phase
 
+    text = _get_moon_phase_text(earth.date)
     normalized_age = _get_normalized_age(earth.date)
 
     return MoonInfo(normalized_age, phase_percent, text)
