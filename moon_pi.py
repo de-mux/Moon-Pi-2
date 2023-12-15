@@ -767,7 +767,7 @@ def get_battery_charge_percent() -> t.Union[float, None]:
 class InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         # Get corresponding Loguru level if it exists.
-        level: str | int
+        level: t.Union[str, int]
         try:
             level = logger.level(record.levelname).name
         except ValueError:
