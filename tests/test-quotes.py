@@ -31,7 +31,7 @@ def test_quotes(now, palette):
             100,
             palette,
         )
-        img.save(str(OUT_DIR / f"test-img-{idx}.png"))
+        img.save(str(OUT_DIR / f"test-quote-{idx}.png"))
 
 
 def test_bday(palette):

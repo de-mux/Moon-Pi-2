@@ -29,13 +29,14 @@ except ImportError:
         width = 800
         height = 480
 
-        BLACK = 0x000000  #   0000  BGR
-        WHITE = 0xFFFFFF  #   0001
-        GREEN = 0x00FF00  #   0010
-        BLUE = 0xFF0000  #   0011
-        RED = 0x0000FF  #   0100
-        YELLOW = 0x00FFFF  #   0101
-        ORANGE = 0x0080FF  #   0110
+        # B,G,R
+        BLACK = 0x000000
+        WHITE = 0xFFFFFF
+        GREEN = 0x00FF00
+        BLUE = 0xFF0000
+        RED = 0x0000FF
+        YELLOW = 0x00FFFF
+        ORANGE = 0x0080FF
 
         def __init__(self, display_id: str):
             self.name = display_id
@@ -127,6 +128,8 @@ BATTERY_LOW_THRESHOLD = 20
 MOON_QUARTERS = ["New Moon", "First Quarter", "Full Moon", "Third Quarter"]
 MOON_PHASES = ["Waxing Crescent", "Waxing Gibbous", "Waning Gibbous", "Waning Crescent"]
 
+# No official definition of supermoon -- this is the Sky and Telescope definition
+SUPERMOON_DISTANCE_AU = 358_884_000 / (1.495978707 * 10**11)
 
 # --------------- LUNAR PHASE ------------------
 
@@ -146,7 +149,19 @@ def _arrow_to_ephem(dt: arrow.Arrow) -> ephem.Date:
     return ephem.Date(dt.datetime)
 
 
+def _get_moon(date: ephem.Date, location: t.Optional[dict[str, t.Any]] = None):
+    earth = ephem.Observer()
+    if location:
+        earth.lat = math.radians(location["latitude"])
+        earth.long = math.radians(location["longitude"])
+    # earth.date = _arrow_to_ephem(dt)
+    earth.date = date
+
+    return ephem.Moon(earth)
+
+
 def _get_moon_cycle_range(date: ephem.Date) -> tuple[ephem.Date, ephem.Date]:
+    """Get the start and end dates for the current lunation."""
     cycle_start = ephem.previous_new_moon(date)
     cycle_end = ephem.next_new_moon(cycle_start)
     if round(cycle_end, 5) <= round(date, 5):
@@ -159,7 +174,32 @@ def _within_a_day(first: ephem.Date, second: ephem.Date):
     return abs(second - first) <= 0.5
 
 
+def _is_full_moon(date: ephem.Date) -> bool:
+    cycle_start, _ = _get_moon_cycle_range(date)
+    full_moon_this_cycle = ephem.next_full_moon(cycle_start)
+    return _within_a_day(date, full_moon_this_cycle)
+
+
+def _is_blue_moon(date: ephem.Date) -> bool:
+    cycle_start, _ = _get_moon_cycle_range(date)
+    previous_full = ephem.previous_full_moon(cycle_start).datetime()
+    return date.datetime().month == previous_full.month
+
+
+def _is_super_moon(date: ephem.Date) -> bool:
+    if _is_full_moon(date):
+        moon = _get_moon(date)
+        if moon.earth_distance <= SUPERMOON_DISTANCE_AU:
+            return True
+    return False
+
+
 def _get_moon_phase_text(date: ephem.Date):
+    if _is_super_moon(date):
+        return "Supermoon"
+    if _is_blue_moon(date):
+        return "Blue Moon"
+
     cycle_start, cycle_end = _get_moon_cycle_range(date)
 
     quarter_dates = [
@@ -196,17 +236,12 @@ def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
     given day.
     """
     middle_of_day = dt.replace(hour=12).floor("hour")
+    date = _arrow_to_ephem(middle_of_day)
 
-    earth = ephem.Observer()
-    earth.lat = math.radians(LOCATION["latitude"])
-    earth.long = math.radians(LOCATION["longitude"])
-    earth.date = _arrow_to_ephem(middle_of_day)
-
-    moon = ephem.Moon(earth)
+    moon = _get_moon(date, LOCATION)
+    text = _get_moon_phase_text(date)
+    normalized_age = _get_normalized_age(date)
     phase_percent = moon.phase
-
-    text = _get_moon_phase_text(earth.date)
-    normalized_age = _get_normalized_age(earth.date)
 
     return MoonInfo(normalized_age, phase_percent, text)
 

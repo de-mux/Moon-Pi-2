@@ -14,6 +14,7 @@ An ePaper moon calendar powered by Raspberry Pi
     - [Setup Software](#setup-software)
     - [Customization](#customization)
       - [About The Moon Images](#about-the-moon-images)
+      - [Background image](#background-image)
       - [Quotations File](#quotations-file)
     - [Moon Phase Calculation](#moon-phase-calculation)
   - [Wire it Up](#wire-it-up)
@@ -241,22 +242,29 @@ generally free for personal/educational use (see
 There are enough images to provide a different moon image for every day of a
 cycle (30 total to cover a complete ~29.5-day moon phase cycle).
 
-If you want to use your own images, it's recommended (though not strictly
-required) to convert the images to the color palette used by your display.
+Note the script will automatically downscale and convert images to the e-Paper
+display's color palette using the Floyd-Steinberg dithering method.
 
-To get a color palette, you can find one of the demo images for your given
-display from the Waveshare website, and use that as your palette file. Then use
-that file to convert your image to that color palette.
+##### Background image
+
+The background image used is `./images/screen-template-7in3.png`. If you change
+this, you may want to convert it to the e-Paper display's color palette.
 
 Some image manipulation programs like [ImageMagick](https://imagemagick.org/)
 allow you to specify an arbitrary image as a "palette file", while others (like
-ffmpeg) require you to create a specific image to be used as a palette file.
+ffmpeg) require you to create a specific image format to be used as a palette
+file.
+
+There is a reference palette image `./images/waveshare-7color-palette.png` for
+the 7-color waveshare display.
+
+You can also find reference files on the Waveshare website.
 
 I found the best results were obtained by running source images through
 ImageMagick with the FloydSteinberg dither setting.
 
 ```bash
-magick input.png -dither FloydSteinberg -remap waveshare-7color-palette.png output.png
+magick input.png -dither FloydSteinberg -remap images/waveshare-7color-palette.png output.png
 ```
 
 (I also tried ffmpeg and Gimp with various dither settings including Floyd
