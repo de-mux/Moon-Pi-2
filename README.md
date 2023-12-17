@@ -34,8 +34,6 @@ Based on [Moon-Pi](https://github.com/barryl93/Moon-Pi).
 
 ## Materials
 
-So you want to build a moon-a-day calendar! You'll need the following:
-
 - [Raspberry Pi Zero 2 W](https://www.amazon.com/gp/product/B09LH5SBPS) (or
   Raspberry Pi Zero W, though I found the 2 to be more reliable for this
   application)
@@ -103,6 +101,7 @@ So you want to build a moon-a-day calendar! You'll need the following:
    - ```bash
      sudo raspi-config
      ```
+
    - Choose Interfacing Options -> SPI -> Yes Enable SPI interface
    - Choose Interfacing Options -> I2C -> Yes
    - Reboot: `sudo shutdown -r now`
@@ -243,7 +242,7 @@ want to change:
 The moon images and background image included were obtained from
 [NASA Dial-A-Moon](https://svs.gsfc.nasa.gov/gallery/moonphase/), which are
 generally free for personal/educational use (see
-[NASA Images and Media Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
+[NASA Images and Media Guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/)).
 There are enough images to provide a different moon image for every day of a
 cycle (30 total to cover a complete ~29.5-day moon phase cycle).
 
