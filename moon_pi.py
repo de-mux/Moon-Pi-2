@@ -7,10 +7,12 @@ import csv
 import inspect
 import logging
 import math
+import os
 import random
 import types
 import typing as t
 from dataclasses import dataclass
+from enum import IntEnum
 from functools import lru_cache
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -18,6 +20,9 @@ from unittest.mock import MagicMock
 import arrow
 import ephem
 import pisugar
+import skyfield
+import skyfield.almanac
+import skyfield.api
 from loguru import logger
 from PIL import Image, ImageDraw, ImageFont
 
@@ -74,9 +79,15 @@ except ImportError:
 BIRTHDAY_MONTH = 6
 BIRTHDAY_DAY = 16
 
+# Files
 BASE_DIR = Path(__file__).parent
 QUOTATION_FILE = BASE_DIR / "quotations.csv"
-
+DATA_DIR = BASE_DIR / "data"
+EPHEMERIS_FILES = {
+    2050: "de421.bsp",
+    2150: "de440s.bsp",
+    2650: "de440.bsp",
+}
 FONT_DIR = BASE_DIR / "fonts"
 FONTS = {
     "quote": ("Luminari-Regular.ttf", 20),
@@ -87,12 +98,11 @@ FONTS = {
 (font_filename, default_size).
 Font files are assumed to be in the "fonts" directory.
 """
-
-WHITE = 0xFFFFFF
-
 IMAGE_DIR = BASE_DIR / "images"
 BACKGROUND_IMAGE = IMAGE_DIR / "screen-template-7in3.png"
 BATTERY_INDICATOR_IMAGE = IMAGE_DIR / "battery.png"  # modified icon from OpenMoji
+
+WHITE = 0xFFFFFF
 
 WAVESHARE_DISPLAY = "epd7in3f"
 """The display to use. To get a list of possibilities, use:
@@ -125,13 +135,135 @@ own location.
 BATTERY_LOW_THRESHOLD = 20
 """Battery low indicator will be drawn if charge becomes lower than this threshold."""
 
+
+class Quarter(IntEnum):
+    NEW = 0
+    FIRST = 1
+    FULL = 2
+    THIRD = 3
+
+
 MOON_QUARTERS = ["New Moon", "First Quarter", "Full Moon", "Third Quarter"]
 MOON_PHASES = ["Waxing Crescent", "Waxing Gibbous", "Waning Gibbous", "Waning Crescent"]
 
 # No official definition of supermoon -- this is the Sky and Telescope definition
-SUPERMOON_DISTANCE_AU = 358_884_000 / (1.495978707 * 10**11)
+# SUPERMOON_DISTANCE_AU = 358_884_000 / (1.495978707 * 10**11)
+SUPERMOON_DISTANCE_KM = 358_884
 
 # --------------- LUNAR PHASE ------------------
+
+
+@lru_cache
+def _get_ephemeris(dt: arrow.Arrow):
+    """Load an appropriate ephemeris file based on the date.
+    See https://rhodesmill.org/skyfield/files.html for info about ephemeris files.
+    """
+    os.makedirs(DATA_DIR, exist_ok=True)
+    for max_year, fname in EPHEMERIS_FILES.items():
+        if dt.year < max_year:
+            return _get_ephemeris_file(fname)
+    msg = f"no appropriate ephemeris file found for {dt}. Update EPHEMERIS_FILES"
+    raise RuntimeError(msg)
+
+
+@lru_cache
+def _get_ephemeris_file(fname: Path):
+    return skyfield.api.load(fname)
+
+
+class MoonFinder:
+    def __init__(self, dt: arrow.Arrow):
+        self._dt = dt
+        self.timescale = skyfield.api.load.timescale()
+        pass
+
+    @property
+    def ts(self):
+        return self.timescale.from_datetime(self._dt.datetime)
+
+    def get_moon_phase_text(self):
+        if self._is_super_moon():
+            return "Supermoon"
+        if self._is_blue_moon():
+            return "Blue Moon"
+
+        discrete_phase = self._get_discrete_quarter_today()
+        if discrete_phase is not None:
+            return MOON_QUARTERS[discrete_phase]
+
+        phase = round(self.get_phase())
+        quarters = [90, 180, 270, 360]
+        for idx, quarter in enumerate(quarters):
+            if phase < quarter:
+                return MOON_PHASES[idx]
+
+    def _get_discrete_quarter_today(self) -> t.Union[int, None]:
+        """If the moon will reach one of its discrete quarters today, return an
+        int from 0-3 representing the quarter.
+        Otherwise, return None indicating the moon is between quarters.
+        """
+        t0 = self._dt.floor("day")
+        t1 = self._dt.ceil("day")
+        _, quarters = self._get_moon_quarters_between(t0, t1)
+        if len(quarters) > 0:
+            return quarters[0]
+        return None
+
+    def _get_moon_quarters_between(
+        self, t0: arrow.Arrow, t1: arrow.Arrow
+    ) -> tuple[list[arrow.Arrow], list[int]]:
+        if t1 < t0:
+            return [], []
+
+        ts, quarter = skyfield.almanac.find_discrete(
+            self.timescale.from_datetime(t0.datetime),
+            self.timescale.from_datetime(t1.datetime),
+            skyfield.almanac.moon_phases(self.ephemeris),
+        )
+
+        return ts, quarter
+
+    def _is_new_moon(self):
+        return self._get_discrete_quarter_today() == int(Quarter.NEW)
+
+    def _is_full_moon(self):
+        return self._get_discrete_quarter_today() == int(Quarter.FULL)
+
+    def _is_blue_moon(self):
+        if not self._is_full_moon():
+            return False
+        t0 = self._dt.floor("month")
+        t1 = self._dt.shift(days=-1)
+        _, previous_quarters_this_month = self._get_moon_quarters_between(t0, t1)
+        return int(Quarter.FULL) in previous_quarters_this_month
+
+    def _is_super_moon(self):
+        if not self._is_full_moon():
+            return False
+        earth = self.ephemeris["earth"].at(self.ts)
+        moon = earth.observe(self.ephemeris["moon"])
+        if moon.distance().km <= SUPERMOON_DISTANCE_KM:
+            return True
+
+    def _get_today_timerange(self):
+        return (self._dt.floor("day"), self._dt.ceil("day"))
+
+    def get_normalized_age(self):
+        # t0 = self._dt.shift(days=31)
+        # t1 = self._dt
+
+        # _, previous_quarters = self._get_moon_quarters_between(t0, t1)
+        # r_idx = list(reversed(previous_quarters)).index(int(Quarter.NEW))
+
+        return self.get_phase() / 360.0
+
+    def get_phase(self) -> float:
+        phase = skyfield.almanac.moon_phase(self.ephemeris, self.ts)
+        return float(phase.degrees)
+
+    @property
+    def ephemeris(self):
+        return _get_ephemeris(self._dt)
 
 
 @dataclass
@@ -233,18 +365,13 @@ def _get_normalized_age(date: ephem.Date):
     return (days_since_new / (cycle_end - cycle_start)) % 1.0
 
 
-def get_moon_phase(dt: arrow.Arrow) -> MoonInfo:
-    """Get the moon info for the 24-hour period, centered around the midpoint of the
-    given day.
-    """
+def get_moon_info(dt: arrow.Arrow) -> MoonInfo:
     middle_of_day = dt.replace(hour=12).floor("hour")
-    date = _arrow_to_ephem(middle_of_day)
 
-    moon = _get_moon(date, LOCATION)
-    text = _get_moon_phase_text(date)
-    normalized_age = _get_normalized_age(date)
-    phase_percent = moon.phase
-
+    mf = MoonFinder(middle_of_day)
+    text = mf.get_moon_phase_text()
+    normalized_age = mf.get_normalized_age()
+    phase_percent = None
     return MoonInfo(normalized_age, phase_percent, text)
 
 
@@ -795,7 +922,7 @@ if __name__ == "__main__":
     charge_pct = get_battery_charge_percent()
 
     now = arrow.now()
-    moon_info = get_moon_phase(now)
+    moon_info = get_moon_info(now)
     logger.info(f"Date: {now}")
     logger.info(f"{moon_info}")
 

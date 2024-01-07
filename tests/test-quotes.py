@@ -16,7 +16,7 @@ OUT_DIR = BASE_DIR / "output"
 def test_quotes(now, palette):
     rows = moon_pi.load_quotations()
 
-    moon_info = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_info(now)
 
     for idx, row in enumerate(rows):
         quote, credit = row
@@ -37,7 +37,7 @@ def test_quotes(now, palette):
 def test_bday(palette):
     now = arrow.Arrow(2020, 6, 16)
 
-    moon_info = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_info(now)
 
     quote, credit, font_size = moon_pi.get_banner_text(now)
     img = moon_pi.generate_image(
@@ -54,7 +54,7 @@ def test_bday(palette):
 
 def test_low_battery(now, palette):
     quote, credit, font_size = moon_pi.get_banner_text(now)
-    moon_info = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_info(now)
 
     img = moon_pi.generate_image(
         now,

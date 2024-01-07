@@ -20,7 +20,7 @@ def test_phases(palette):
     for idx, dt in enumerate(arrow.Arrow.range("day", start.datetime, end.datetime)):
         now = dt
 
-        moon_info = moon_pi.get_moon_phase(now)
+        moon_info = moon_pi.get_moon_info(now)
 
         quote, credit, font_size = moon_pi.get_banner_text(now)
 
@@ -40,7 +40,7 @@ def test_phases(palette):
 def test_supermoon(palette):
     now = arrow.get(2024, 9, 17, 12, tzinfo="US/Pacific")
 
-    moon_info = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_info(now)
 
     quote, credit, font_size = moon_pi.get_banner_text(now)
 
@@ -60,7 +60,7 @@ def test_supermoon(palette):
 def test_blue_moon(palette):
     now = arrow.get(2026, 5, 31, 12, tzinfo="US/Pacific")
 
-    moon_info = moon_pi.get_moon_phase(now)
+    moon_info = moon_pi.get_moon_info(now)
 
     quote, credit, font_size = moon_pi.get_banner_text(now)
 
@@ -83,11 +83,13 @@ def test_next_supermoon():
     for dt in arrow.Arrow.range("day", start.datetime, end.datetime):
         now = dt
 
-        moon_info = moon_pi.get_moon_phase(now)
+        moon_info = moon_pi.get_moon_info(now)
         if moon_info.text == "Supermoon":
             assert now == arrow.get(datetime(2024, 9, 17, 12), "US/Pacific")
             print(now)
             return
+    msg = "supermoon not found"
+    raise AssertionError(msg)
 
 
 def test_next_blue_moon():
@@ -96,11 +98,13 @@ def test_next_blue_moon():
     for dt in arrow.Arrow.range("day", start.datetime, end.datetime):
         now = dt
 
-        moon_info = moon_pi.get_moon_phase(now)
+        moon_info = moon_pi.get_moon_info(now)
         if moon_info.text == "Blue Moon":
             assert now == arrow.get(datetime(2026, 5, 31, 12), "US/Pacific")
             print(now)
             return
+    msg = "blue moon not found"
+    raise AssertionError(msg)
 
 
 if __name__ == "__main__":
