@@ -1,4 +1,6 @@
 .python-version
+.venv
+.mise.toml
 secret.txt
 fonts/Luminari*
 tests/output/
