@@ -7,7 +7,7 @@ import csv
 import inspect
 import logging
 import math
-import random
+import secrets
 import types
 import typing as t
 from dataclasses import dataclass
@@ -690,7 +690,7 @@ def get_banner_text(now: arrow.Arrow):
     else:
         rows = load_quotations()
         # Choose a random row
-        random_row = random.choice(rows)
+        random_row = secrets.choice(rows)
         # set the variables to print the text later
         quotation_text, credit_text = random_row
         font_size = get_font_size_for_quote(quotation_text)
